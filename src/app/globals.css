@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.font-inter {
+  @apply font-sans;
+  font-family: 'Inter', sans-serif;
+}
+
+.font-rubik {
+  @apply font-sans;
+  font-family: 'Rubik', sans-serif;
+}
+
+.font-schibstedGrotesk {
+  @apply font-sans;
+  font-family: 'Schibsted Grotesk', sans-serif;
+}
+
+html {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  min-height: 100%;
+  width: 100%;
+  overflow-x: hidden;
+  /* background-color: var(--surface-bg); */
+
+  /* Card shadow/Stack shadow */
+
+  /* border: 1px solid var(--stroke-15-card, rgba(255, 255, 255, 0.4)); */
+}
+
+@layer utilities {
+
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Hide scrollbar for IE, Edge and Firefox */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+  }
+
+  .bg-checkbox {
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='none' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='12' fill='%23fff' fill-opacity='.05'/%3E%3Cpath d='M8 13.313l2.703 2.188L16 8.5' stroke='%23f8f8f8' stroke-opacity='.8' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+      no-repeat 50% 50% / 100% auto;
+  }
+}
+
+input {
+  background-color: transparent;
+}
