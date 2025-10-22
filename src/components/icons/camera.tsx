@@ -1,6 +1,6 @@
 import { useTheme } from "next-themes";
 
-export default function InformationCircleRegular() {
+export default function CameraRegular() {
     const { theme } = useTheme();
     return (
         <svg
@@ -16,7 +16,7 @@ export default function InformationCircleRegular() {
     )
 }
 
-export function InformationCircleBold() {
+export function CameraBold() {
     const { theme } = useTheme();
     return (
         <svg

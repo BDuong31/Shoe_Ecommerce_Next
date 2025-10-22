@@ -1,15 +1,11 @@
 'use client';
-import AccessibilityRegular, { AccessibilityBold } from "@/components/icons/accessibility";
-import AddCircleRegular, { AddCircleBold } from "@/components/icons/add-circle";
-import AirplaneRegular, { AirplaneBold } from "@/components/icons/airplane";
-import AlarmRegular, { AlarmBold } from "@/components/icons/alarm";
-import Attach from "@/components/icons/attach";
-import Avatar from "@/components/icons/avatar";
-import BugRegular, { BugBold } from "@/components/icons/bug";
-import CallRegular, { CallBold } from "@/components/icons/call";
-import CameraReverseRegular, { CameraReverseBold } from "@/components/icons/camera-reverse";
-import CheckmarkCircleRegular, { CheckmarkCircleBold } from "@/components/icons/checkmark-circle";
-import UserRegula, { UserBold } from "@/components/icons/user";
+import BarChartRegular, { BarChartBold } from "@/components/icons/bar-chart";
+import Compress from "@/components/icons/compress";
+import DashboadRegular, { DashboardBold } from "@/components/icons/dashboard";
+import DocumentAttachRegular, { DocumentAttachBold } from "@/components/icons/document-attach";
+import EyeDropperRegular, { EyeDropperBold } from "@/components/icons/eye-dropper";
+import IdCardRegular  from "@/components/icons/id-card";
+import InformationCircleRegular from "@/components/icons/information-circle";
 import Image from "next/image";
 
 export default function Home() {
@@ -62,8 +58,8 @@ export default function Home() {
             Read our docs
           </a>
         </div>
-        <CallRegular />
-        <CallBold />
+        <BarChartRegular />
+        <BarChartBold />
       </main>
       <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
         <a

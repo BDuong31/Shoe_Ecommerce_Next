@@ -13,7 +13,6 @@ export default function CallRegular(){
                 strokeLinecap="round" 
                 strokeLinejoin="round" 
                 strokeWidth="32" 
-                strokeOpacity="0.7"
                 fill="none"    
             />
         </svg>
