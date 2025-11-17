@@ -1,0 +1,1 @@
+export { default as NewDropsView } from "@/sections/newDrops/view/new-drops";

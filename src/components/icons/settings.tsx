@@ -13,6 +13,7 @@ export default function SettingRegular() {
                 strokeLinecap="round"
                 strokeLinejoin="round"
                 strokeWidth={32}
+                fill="none"
             />
         </svg>
     )
