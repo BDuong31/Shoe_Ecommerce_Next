@@ -6,11 +6,9 @@ export const metadata = {
     title: 'Products | Baso Spark',
 }
 
-export default async function ProductsPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default function ProductsPage(
+  { params }: { params: { id: string } }
+){
   const { id } = params;
   return <Product id={id} />;
 }

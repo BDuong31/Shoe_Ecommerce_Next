@@ -1,16 +1,12 @@
-// src/components/admin/RecentOrders.tsx
 import { MoreHorizontal } from 'lucide-react';
 import Image from 'next/image';
 
-// Dữ liệu mẫu
 const orders = [
   { id: 1, product: 'Adidas Ultra boost', orderId: '#25426', date: 'Jan 8th,2022', customer: { name: 'Leo Gouse', img: '/baso.jpg' }, status: 'Delivered', amount: 200.00 },
   { id: 2, product: 'Adidas Ultra boost', orderId: '#25425', date: 'Jan 7th,2022', customer: { name: 'Jaxson Korsgaard', img: '/baso.jpg' }, status: 'Canceled', amount: 200.00 },
   { id: 3, product: 'Adidas Ultra boost', orderId: '#25424', date: 'Jan 6th,2022', customer: { name: 'Talan Botosh', img: '/baso.jpg' }, status: 'Delivered', amount: 200.00 },
-  // ... thêm data
 ];
 
-// Component nhỏ cho Status
 function StatusBadge({ status }: { status: string }) {
   let colorClass = '';
   switch (status) {

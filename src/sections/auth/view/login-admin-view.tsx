@@ -12,6 +12,7 @@ import { introspect, login } from "@/apis/auth";
 import EyeRegular from "@/components/icons/eye";
 import EyeOffRegular from "@/components/icons/eye-off";
 import { useRouter } from "next/navigation";
+import SplashScreen from "@/components/loading/splash-sceen";
 
 export default function LoginAdminView() {
     const { setToken } = useAuth()
@@ -76,7 +77,9 @@ export default function LoginAdminView() {
         }
     }
 
-
+    if (loading) {
+        return <SplashScreen className='h-[100vh]'/>
+    }
     return (
         <div className="h-[100vh] flex flex-row justify-center items-center">
             <div className="w-[50%] h-[100vh]" style={{backgroundImage: 'url(http://localhost:3001/bgadmin.png)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat'}}>

@@ -10,9 +10,6 @@ type PaymentViewProps = {
     setSelectedMethodChild: (method: string) => void;
 }
 export default function PaymentDynamicContent({ selectedMethod, selectedMethodChild, setSelectedMethodChild }: PaymentViewProps) {
-    console.log("select child:", selectedMethodChild);
-    console.log("select method:", selectedMethod);
-
     switch (selectedMethod) {
         case 'vnpay':
             return (
@@ -31,7 +28,7 @@ export default function PaymentDynamicContent({ selectedMethod, selectedMethodCh
                     >
                         <div>
                             <div className="w-full font-bold m-0 text-[15px]">
-                                App Ngân hàng và Ví điện tử
+                                Banking Apps and E-wallets
                                 (
                                 <span className='inline-flex items-end font-bold'>
                                     <span className="text-[#e50019]">VN</span>
@@ -58,7 +55,7 @@ export default function PaymentDynamicContent({ selectedMethod, selectedMethodCh
                     >
                         <div>
                             <div className="w-full font-bold m-0 text-[15px]">
-                                Thẻ nội địa và tài khoản ngân hàng
+                                Domestic Cards and Bank Accounts
                             </div>
                         </div>
                         <div className="flex-shrink-0">
@@ -78,7 +75,7 @@ export default function PaymentDynamicContent({ selectedMethod, selectedMethodCh
                     >
                         <div>
                             <div className="w-full font-bold m-0 text-[15px]">
-                                Thẻ thanh toán quốc tế
+                                International Payment Cards
                             </div>
                         </div>
                         <div className="flex-shrink-0">
@@ -129,7 +126,7 @@ export default function PaymentDynamicContent({ selectedMethod, selectedMethodCh
                     >
                         <div>
                             <div className="w-full font-bold m-0 text-[15px]">
-                                Ví Momo
+                                Momo Wallet
                             </div>
                         </div>
                         <div className="flex-shrink-0">
@@ -149,7 +146,7 @@ export default function PaymentDynamicContent({ selectedMethod, selectedMethodCh
                     >
                         <div>
                             <div className="w-full font-bold m-0 text-[15px]">
-                                Ví trả sau
+                                Postpaid Wallet
                             </div>
                         </div>
                         <div className="flex-shrink-0">
@@ -169,7 +166,7 @@ export default function PaymentDynamicContent({ selectedMethod, selectedMethodCh
                     >
                         <div>
                             <div className="w-full font-bold m-0 text-[15px]">
-                                Thẻ ATM nội địa
+                                Domestic ATM Card
                             </div>
                         </div>
                         <div className="flex-shrink-0">
@@ -189,7 +186,7 @@ export default function PaymentDynamicContent({ selectedMethod, selectedMethodCh
                     >
                         <div>
                             <div className="w-full flex gap-1 font-bold m-0 text-[15px]">
-                                Thẻ Visa/Mastercard/JCB
+                                Visa/Mastercard/JCB Cards
                             </div>
                         </div>
                         <div className="flex-shrink-0">
@@ -199,7 +196,7 @@ export default function PaymentDynamicContent({ selectedMethod, selectedMethodCh
                 </div>
             );
         case 'zalopay':
-return (
+            return (
                 <div className="flex flex-col gap-4">
                     <h2 className="text-xl font-bold">ZaloPay Payment</h2>
                     <div
@@ -215,7 +212,7 @@ return (
                     >
                         <div>
                             <div className="w-full font-bold m-0 text-[15px]">
-                                Mở ứng dụng Zalopay
+                                Open Zalopay App
                             </div>
                         </div>
                         <div className="flex-shrink-0">
@@ -235,7 +232,7 @@ return (
                     >
                         <div>
                             <div className="w-full font-bold m-0 text-[15px]">
-                                Thẻ quốc tế
+                                International Payment Cards
                             </div>
                         </div>
                         <div className="flex-shrink-0">
@@ -255,7 +252,7 @@ return (
                     >
                         <div>
                             <div className="w-full font-bold m-0 text-[15px]">
-                               Quyét QR & hanh toán bằng ứng dụng ngân hàng
+                               Scan QR & pay with banking apps
                             </div>
                         </div>
                         <div className="flex-shrink-0">
@@ -275,7 +272,7 @@ return (
                     >
                         <div>
                             <div className="w-full flex gap-1 font-bold m-0 text-[15px]">
-                                Thẻ /Tài khoản nội địa
+                                Domestic Cards and Bank Accounts
                             </div>
                         </div>
                         <div className="flex-shrink-0">
@@ -289,15 +286,15 @@ return (
                 <div className="flex flex-col gap-4">
                     <div className="flex items-center gap-3">
                         <Package className="h-7 w-7 text-blue-600 flex-shrink-0" />
-                        <h2 className="text-xl font-bold text-gray-800">Thanh toán khi nhận hàng (COD)</h2>
+                        <h2 className="text-xl font-bold text-gray-800">Cash on Delivery (COD)</h2>
                     </div>
                     
                     <div className="bg-gray-50 rounded-xl p-5 border border-gray-200 shadow-sm">
                         <p className="text-gray-800 text-[15px] font-medium leading-relaxed">
-                            Bạn sẽ thanh toán bằng tiền mặt cho <span className="font-bold text-blue">nhân viên giao hàng</span> hoặc <span className="font-bold text-blue">nhân viên tại cửa hàng</span> khi nhận được sản phẩm.
+                            You will pay in cash to the <span className="font-bold text-blue">delivery staff</span> or <span className="font-bold text-blue">store staff</span> upon receiving the product.
                         </p>
                         <p className="text-gray-600 text-sm mt-3">
-                            Vui lòng chuẩn bị đúng số tiền thanh toán để quá trình giao hàng diễn ra thuận lợi.
+                            Please prepare the exact amount to ensure a smooth delivery process.
                         </p>
                     </div>
                 </div>

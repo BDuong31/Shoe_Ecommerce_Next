@@ -15,9 +15,8 @@ type CheckoutDetailsProps = {
     voucherDiscount?: number | undefined;
     totalAfterDiscount?: number | undefined;
     variantMap: Record<string, IProductVariant>;
-    images: Record<string, IImage[]> | undefined;
 } 
-const CheckoutDetails = ({ cartTotal, cartCount, deliveryFee, voucherDiscount, totalAfterDiscount, variantMap, images }: CheckoutDetailsProps) => {
+const CheckoutDetails = ({ cartTotal, cartCount, deliveryFee, voucherDiscount, totalAfterDiscount, variantMap }: CheckoutDetailsProps) => {
     const rounter = useRouter();
     const { cartItem } = useCart();
   

@@ -1,27 +1,33 @@
 'use client';
-import React, { use } from 'react';
+import React, { use, useEffect } from 'react';
 import AddressModal from '@/components/address/address-modal'; 
 import { addresses } from '../data/address';
-import { IAddress, IAddressUpdate } from '@/interfaces/address';
-import { deleteAddress, getAddresses, updateAddress } from '@/apis/address';
+import { IAddress, IAddressCreate, IAddressUpdate } from '@/interfaces/address';
+import { createAddress, deleteAddress, getAddresses, updateAddress } from '@/apis/address';
 import { cp } from 'fs';
+import { SplashScreen } from '@/components/loading';
 
 export default function AddressPage() {
   const [addressList, setAddressList] = React.useState<IAddress[] | undefined>(undefined);
   const [addressToEdit, setAddressToEdit] = React.useState<IAddress | null>(null);
   const [addressToDelete, setAddressToDelete] = React.useState<IAddress | null>(null);
+  const [loading, setLoading] = React.useState(true);
 
   const fetchAddresses = async () => {
+    setLoading(true);
     try {
       const response = await getAddresses();
       console.log('Fetched addresses:', response);
       setAddressList(response.data);
     } catch (error) {
       console.error('Error fetching addresses:', error);
+    } finally {
+      setLoading(false);
     }
   }
 
   const handleIsDefault = async (id: string) => {
+    setLoading(true);
     try {
       const updatedAddress : IAddressUpdate = {
         isDefault: true,
@@ -33,6 +39,8 @@ export default function AddressPage() {
       }
     } catch (err) {
       console.error('Error update addresses: ', err);
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -43,7 +51,7 @@ export default function AddressPage() {
 
   const handleConfirmDelete = async () => {
     if (!addressToDelete) return;
-
+    setLoading(true);
     try {
       const response = await deleteAddress(addressToDelete.id);
       if (response){
@@ -52,10 +60,39 @@ export default function AddressPage() {
       }
     } catch (err) {
       console.error('Error deleting address: ', err);
+    } finally {
+      setLoading(false)
     }
 
     (document.getElementById('delete_address_modal') as HTMLDialogElement)?.close();
     setAddressToDelete(null);
+  }
+
+  const handleAddressSubmit = async (addressId: string, address: IAddressCreate | IAddressUpdate, type: 'add' | 'edit') => {
+    setLoading(true);
+    if (type === 'add'){
+      try {
+        const response = await createAddress(address as IAddressCreate);
+        if (response) {
+          fetchAddresses()
+        }
+      } catch(err) {
+        console.error('error add new address: ', err)
+      } finally {
+        setLoading(false);
+      }
+    } else if (type === 'edit') {
+      try {
+        const response = await updateAddress(addressId, address as IAddressUpdate);
+        if (response) {
+          fetchAddresses()
+        }
+      } catch(err) {
+        console.error('error updating address: ', err)
+      } finally {
+        setLoading(false);
+      }
+    }
   }
 
   React.useEffect(() => {
@@ -70,6 +107,10 @@ export default function AddressPage() {
       setAddressToEdit(address);
     }
   };
+
+  if (loading) {
+    return <SplashScreen className='h-[80vh]'/>
+  }
 
   return (
     <div className='w-full flex flex-col'>
@@ -138,8 +179,8 @@ export default function AddressPage() {
         )}
       </div>
 
-      <AddressModal modalId="add_address_modal" type="add" onSubmit={fetchAddresses} />
-      <AddressModal modalId="update_address_modal" type="edit" address={addressToEdit} onSubmit={fetchAddresses} />
+      <AddressModal modalId="add_address_modal" type="add" onSubmit={handleAddressSubmit} />
+      <AddressModal modalId="update_address_modal" type="edit" address={addressToEdit} onSubmit={handleAddressSubmit} />
       <dialog id="delete_address_modal" className="modal">
         <div className="modal-box">
           <h3 className="font-bold text-lg">Confirm delete!</h3>

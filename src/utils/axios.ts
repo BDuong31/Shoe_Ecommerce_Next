@@ -14,6 +14,7 @@ import { getCouponByCondition } from '@/apis/coupon';
 import { ICouponCondition } from '@/interfaces/coupon';
 import { IConditionalProduct } from '@/interfaces/product';
 import { use } from 'react';
+import { check } from 'zod';
 
 const axiosInstance = axios.create({ baseURL: HOST_API });
 
@@ -77,6 +78,8 @@ export const endpoints = {
 
         getUserCoupons: `${VERSION_PREFIX}/user/coupons`,
         createUserCoupon: `${VERSION_PREFIX}/user/coupons/assign`,
+        checkUserCoupon: (couponId: string) =>
+            `${VERSION_PREFIX}/user/coupons/check/${couponId}`,
         useUserCoupon: (couponId: string) => `${VERSION_PREFIX}/user/coupons/use/${couponId}`
     },
 
@@ -296,8 +299,12 @@ export const endpoints = {
     rating: {
         createRating: `${VERSION_PREFIX}/ratings`,
         getRatings: `${VERSION_PREFIX}/ratings`,
+        getRatingsByProductId: (productId: string) =>
+            `${VERSION_PREFIX}/ratings?productId=${productId}`,
         getRatingById: (ratingId: string) =>
             `${VERSION_PREFIX}/ratings/${ratingId}`,
+        checkRatingByUserAndProduct: (productId: string) =>
+            `${VERSION_PREFIX}/ratings/check-exist/${productId}`,
         updateRating: (ratingId: string) =>
             `${VERSION_PREFIX}/ratings/${ratingId}`,
         deleteRating: (ratingId: string) =>

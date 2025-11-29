@@ -1,5 +1,6 @@
 import { IBrand } from "./brand";
 import { ICategory } from "./category";
+import { IImage } from "./image";
 import { IAvgRating } from "./rating";
 
 export interface IProduct {
@@ -17,6 +18,7 @@ export interface IProductDetails extends IProduct {
     brand: IBrand;
     category: ICategory;
     averageRating: IAvgRating;
+    images: IImage[];
     isFavorited?: boolean;
 }
 

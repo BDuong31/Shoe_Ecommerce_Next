@@ -1,8 +1,6 @@
 "use client"
 import CartItem from '@/components/cart/cartItem';
 import React, { useEffect, useState, useMemo, use } from 'react'
-import { mockCartItems } from '../data/cart';
-import mockProduct from '@/sections/home/data/product';
 import { ProductListLaster } from '@/components/product/productList';
 import { GrFormNext, GrFormPrevious } from 'react-icons/gr';
 import { useRouter } from 'next/dist/client/components/navigation';
@@ -12,16 +10,13 @@ import { IProduct, IProductDetails } from '@/interfaces/product';
 import { getVariantById, getVariants } from '@/apis/variant';
 import { getProducts } from '@/apis/product';
 import { ICartItem } from '@/interfaces/cart';
-import { get } from 'http';
-import { product } from '@/sections/purchase/data/purchase';
-import { getImages } from '@/apis/image';
-import { IConditionalImage, IImage } from '@/interfaces/image';
 import { ICoupon } from '@/interfaces/coupon';
 import { getCouponByCondition, getCouponById } from '@/apis/coupon';
 import { useToast } from '@/context/toast-context';
 import { getUserCoupons } from '@/apis/user';
 import { useUserProfile } from '@/context/user-context';
 import { IUserCoupon } from '@/interfaces/user';
+import { SplashScreen } from '@/components/loading';
 
 export default function CartView() {
     const rounter = useRouter();
@@ -29,9 +24,9 @@ export default function CartView() {
     const {userProfile} = useUserProfile();
     const { showToast } = useToast();
     const [relatedProducts, setRelatedProducts] = useState<IProductDetails[]>([])
+    const [relatedVariants, setRelatedVariants] = useState<Record<string, IProductVariant[]>>({})
     const [variants, setVariants] = useState<IProductVariant[]>([])
     const [products, setProducts] = useState<IProduct[]>([])
-    const [images, setImages] = useState<Record<string, IImage[]>>({});
     const [variantMap, setVariantMap] = useState<Record<string, IProductVariant>>({})
     const [voucherDiscount, setVoucherDiscount] = useState(0);
     const [code, setCode] = useState<string>('');
@@ -44,51 +39,49 @@ export default function CartView() {
     const [cartTotal, setCartTotal] = useState(0);
     const [totalAfterDiscount, setTotalAfterDiscount] = useState(0);
 
+    const [loading, setLoading] = useState(true);
+
     const fetchVariants = async (variantId: string) => {
+        setLoading(true);
         try {
             const response = await getVariantById(variantId);
             return response.data;
         } catch (error) {
             console.error('Error fetching variant by ID:', error);
             return null;
+        } finally {
+            setLoading(false)
         }
     }
 
     const fetchVariantByProductId = async (productId: string) => {
+        setLoading(true);
         try {
             const response = await getVariants(productId);
             return response.data;
         } catch (error) {
             console.error('Error fetching variants by product ID:', error);
             return [];
+        } finally {
+            setLoading(false)
         }
     }
 
     const fetchRelatedProducts = async () => {
+        setLoading(true);
         try {
             const response = await getProducts();
             const allProducts = response.data;
             setRelatedProducts(allProducts);
         } catch (error) {
             console.error('Error fetching related products:', error);
-        }
-    }
-
-    const fetchImages = async (productId: string) => {
-        try {
-            const dto: IConditionalImage = {
-                refId: productId,
-                type: 'product',
-            };
-            const response = await getImages(dto);
-            setImages(prevImages => ({ ...prevImages, [productId]: response.data }));
-        } catch (error) {
-            console.error('Error fetching images by product ID:', error);
-            return [];
+        } finally {
+            setLoading(false);
         }
     }
     
     const fetchCoupon = async (code: string) => {
+        setLoading(true);
         try {
             const response = await getCouponByCondition({ code });
             console.log('Fetched coupon:', response);
@@ -96,16 +89,21 @@ export default function CartView() {
         } catch (error) {
             console.error('Error fetching coupon by code:', error);
             setCoupon(null);
+        } finally {
+            setLoading(false);
         }
     }
 
     const fetcheCouponById = async (id: string) => {
+        setLoading(true);
         try {
             const response = await getCouponById(id);
             return response.data;
         } catch (error) {
             console.error('Error fetching coupon by ID:', error);
             return null;
+        } finally {
+            setLoading(false);
         }
     }
 
@@ -119,20 +117,25 @@ export default function CartView() {
     }
 
     const fetchUserCoupons = async () => {
+        setLoading(true);
         try {
             const response = await getUserCoupons();
             setUserCoupons(response.data);
         } catch (error) {
             console.error('Error fetching user coupons:', error);
             return [];
-        }   
+        } finally {
+            setLoading(false);
+        }
     }
 
     const handleApplyVoucher = async () => {
+        setLoading(true);
         if (!code || code.trim() === '') {
             showToast('Please enter a voucher code.', 'error');
+            setLoading(false);
             return;
-        }
+        } 
 
         try {
             const response = await getCouponByCondition({ code: code.trim() });
@@ -146,12 +149,14 @@ export default function CartView() {
                 showToast('Invalid or expired voucher code.', 'error');
                 setCoupon(null);
                 clearVoucher();
-            }
+            } 
         } catch (error) {
             console.error('Error fetching coupon:', error);
             showToast('Failed to apply voucher.', 'error');
             setCoupon(null);
             clearVoucher();
+        } finally {
+            setLoading(false);
         }
     }
 
@@ -180,10 +185,33 @@ export default function CartView() {
     }, []);
 
     useEffect(() => {
-        relatedProducts.forEach(product => {
-            fetchImages(product.id);
-        });
+        const loadRelatedVariants = async () => {
+            if (relatedProducts.length === 0) return;
+
+            const newMap: Record<string, IProductVariant[]> = {};
+            await Promise.all(
+                relatedProducts.map(async (product) => {
+                    try {
+                        const variants = await fetchVariantByProductId(product.id);
+                        if (variants) {
+                            newMap[product.id] = variants;
+                        }
+                    } catch (error) {
+                        console.error('Error fetching variants for product:', product.id, error);
+                    }
+                })
+            );
+
+            setRelatedVariants((prevVariants) => ({
+                ...prevVariants,
+                ...newMap,
+            }));
+        };
+
+        loadRelatedVariants();
     }, [relatedProducts]);
+
+    console.log('Related variants:', relatedVariants);
 
     useEffect(() => {
         const fetchAllVariants = async () => {
@@ -354,6 +382,9 @@ export default function CartView() {
         return relatedProducts.slice(startIndex, endIndex);
     }, [relatedProducts, currentPage, itemsPerPage]);
 
+    if (loading) {
+        return <SplashScreen className='h-[80px]' />
+    }
     return (
         <>
             <div className='m-auto 3xl:max-w-[1500px] 2xl:max-w-[1450px] xl:max-w-[90%] lg:max-w-[90%] max-w-[95%] lg:grid grid-cols-3 gap-5 py-10'>
@@ -403,7 +434,7 @@ export default function CartView() {
                                 className="bg-darkgrey text-fawhite rounded-lg px-4 h-10 w-full"
                                 onClick={() => (document.getElementById('voucher_modal') as HTMLDialogElement).showModal()}
                             >
-                                Chọn / Nhập Mã Khuyến Mãi
+                                Apply Voucher
                             </button>
                         )}
                         
@@ -440,7 +471,7 @@ export default function CartView() {
                         </div>
                     </div>
                 </div>
-                <ProductListLaster products={paginatedProducts} images={images} length={4} /> 
+                <ProductListLaster products={paginatedProducts} variants={relatedVariants} length={4} /> 
                 <div className='flex gap-2 py-4 justify-center'>
                     {
                         Array.from({ length: totalPages }).map((_, i) => {
@@ -454,7 +485,7 @@ export default function CartView() {
                     <div className="flex gap-3">
                     <input
                         type="text"
-                        placeholder="Nhập mã khuyến mãi"
+                        placeholder="Enter voucher code"
                         className="input input-bordered flex-1"
                         value={code}
                         onChange={(e) => setCode(e.target.value)}
@@ -464,35 +495,66 @@ export default function CartView() {
                     </button>
                     </div>
 
-                    <div className="divider">Hoặc</div>
-                    <h3 className="font-bold text-lg mb-4">Chọn mã khuyến mãi của bạn</h3>
+                    <div className="divider">Or</div>
+                    <h3 className="font-bold text-lg mb-4">Select Your Voucher</h3>
 
-                    {/* Danh sách voucher của user */}
+                    {/* User's voucher list */}
                     <div className="space-y-3 max-h-60 overflow-y-auto">
                     {userCoupons && userCoupons.length > 0 ? (
                         userCoupons.map((c: IUserCoupon, idx: number) => {
                         const couponItem = couponList.find(coupon => coupon.id === c.couponId);
+                        const couponExpiry = couponItem?.expiryDate ? (new Date(couponItem.expiryDate) < new Date()) : false;
+                        const isStatus = couponExpiry ? 'expired' : c.status;
+                        const UserUse = (couponItem?.totalUsageLimit ?? 0) - (couponItem?.currentUsageCount ?? 0);
+
+                        const isSelected = isStatus === 'available' ? true : false;
+                        const isMinSpend = couponItem && couponItem.minSpend ? (cartTotal >= couponItem.minSpend) : true;   
+                        const maxDiscount = couponItem && couponItem.maxDiscount ? couponItem.maxDiscount : null;
                         console.log('User coupon:', c);
                         console.log('Coupon list:', couponItem);
                         return (
                         <div 
                             key={idx}
-                            className="p-3 border rounded-lg cursor-pointer hover:bg-gray-100"
-                            onClick={() => handleSelectVoucher(couponItem?.code || '')}
+                            className={`p-3 border rounded-lg cursor-pointer hover:bg-gray-100 ${!isSelected || !isMinSpend || UserUse <= 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            onClick={() => isSelected && isMinSpend && UserUse > 0 && handleSelectVoucher(couponItem?.code || "")}
                         >
                             <p className="font-semibold">{couponItem?.name}</p>
                             <p className="text-sm opacity-70">{couponItem?.description}</p>
+                            {!isSelected && (
+                                <div className="ml-2">
+                                {isStatus === 'used' ? (
+                                    <span className="badge badge-ghost text-xs whitespace-nowrap">Used</span>
+                                ) : isStatus === 'expired' ? (
+                                    <span className="badge badge-error text-white text-xs whitespace-nowrap">Expired</span>
+                                ) : null}
+                                </div>
+                            )} 
+                            {!isMinSpend && isSelected && (
+                                <div className="ml-2">
+                                <span className="badge badge-warning text-xs whitespace-nowrap">Not enough minimum spend</span>
+                                </div>
+                            )}
+                            {isMinSpend && isSelected && UserUse <= 0 && (
+                                <div className="ml-2">
+                                <span className="badge badge-ghost text-xs whitespace-nowrap">No uses left</span>
+                                </div>
+                            )}
+                            {isMinSpend && isSelected && maxDiscount && couponItem?.type === "percentage" && (
+                                <div className="ml-2">
+                                <span className="badge badge-info text-xs whitespace-nowrap">Max discount: {maxDiscount}</span>
+                                </div>
+                            )} 
                         </div>
                         );
                     })
                     ) : (
-                        <p className="opacity-70">Bạn chưa có ưu đãi nào.</p>
+                        <p className="opacity-70">You have no vouchers.</p>
                     )}
                     </div>
 
                     <div className="modal-action mt-5">
                     <form method="dialog">
-                        <button className="btn">Đóng</button>
+                        <button className="btn">Close</button>
                     </form>
                     </div>
 
@@ -501,7 +563,7 @@ export default function CartView() {
                 <form method="dialog" className="modal-backdrop">
                     <button></button>
                 </form>
-                </dialog>
+            </dialog>
 
         </>
     )

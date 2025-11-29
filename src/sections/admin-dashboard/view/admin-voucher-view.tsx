@@ -385,9 +385,6 @@ export default function VouchersPage() {
               <button onClick={goToNextPage} disabled={currentPage === totalPages} className="p-2 border rounded-xl disabled:opacity-50 hover:bg-gray-100 transition flex items-center gap-1 font-semibold uppercase px-4">NEXT <GrFormNext size={18} /></button>
           </div>
       )}
-
-      src/sections/admin-dashboard/view/admin-voucher-view.tsx
-
       <dialog id="edit_voucher_modal" className="modal">
         <div className="modal-box w-11/12 max-w-2xl">
           <h3 className="font-bold text-lg">Edit Voucher: {editingVoucher?.code}</h3>

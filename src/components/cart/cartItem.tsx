@@ -154,9 +154,7 @@ const CartItem = ({type , item, variant, variantList} : CartItemProps) => {
         setQtyOptions(options);
 
         if (selectedQty > maxStock) {
-            console.log('Max Stock: ', maxStock);
             const newQty = maxStock > 0 ? 1 : 0;
-            console.log(`Adjusting selectedQty from ${selectedQty} to ${newQty} due to stock change.`);
             if (selectedQty !== newQty) {
                 setSelectedQty(newQty);
                 if (newQty > 0) {

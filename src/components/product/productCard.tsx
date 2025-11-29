@@ -14,7 +14,6 @@ type products = {
 }
 
 export default function ProductCard({ product }: { product: products }) {
-  console.log('Rendering ProductCard for product:', product);
   const salesPercent = (product.sales / 2000) * 100;
   const remainingPercent = (product.remaining / 2000) * 100;
 

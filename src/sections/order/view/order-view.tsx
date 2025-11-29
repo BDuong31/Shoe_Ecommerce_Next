@@ -23,6 +23,7 @@ import { IProductVariant } from '@/interfaces/variant';
 import { getVariantById } from '@/apis/variant';
 import { is } from 'zod/v4/locales';
 import { useRouter } from 'next/navigation';
+import { SplashScreen } from '@/components/loading';
 
 type OrderDetailPageProps = {
     id: string;
@@ -60,59 +61,78 @@ export default function OrderView({ id }: OrderDetailPageProps) {
    const [discount, setDiscount] = React.useState<number>(0);
    const [deliveryFee, setDeliveryFee] = React.useState<number>(0);
    const [totalPayment, setTotalPayment] = React.useState<number>(0);
+   const [loading, setLoading] = React.useState<boolean>(false);
 
   const fetchOrderById = async (id: string) => {
+    setLoading(true);
     try {
       const response = await getOrderById(id);
       setOrder(response.data);
     }  catch (error) {
       console.error('Error fetching order by ID:', error);
+    } finally {
+      setLoading(false);
     }
   }
 
   const fetchOrderCouponById = async (orderId: string) => {
+    setLoading(true);
     try {
       const response = await getOrderCoupon(orderId);
       setOrderCoupon(response.data);
     } catch (error) {
       console.error('Error fetching order coupon by order ID:', error);
+    } finally {
+      setLoading(false);
     }
   }
 
   const fetcheOrderItem = async (orderId: string) => {
+    setLoading(true);
     try {
       const response = await getOrderItemsByOrderId(orderId);
       setOrderItems(response.data);
     } catch (error) {
       console.error('Error fetching order items by order ID:', error);
+    } finally {
+      setLoading(false);
     }
   }
 
   const fetcheVariant = async (varinatId: string) => {
+    setLoading(true);
     try {
       const response = await getVariantById(varinatId);
       const variantData = response.data;
       setVariantMap((prev) => new Map(prev).set(varinatId, variantData));
     } catch (error) {
       console.error('Error fetching variant by ID:', error);
+    } finally {
+      setLoading(false);
     }
   } 
 
   const fetchePaymentById = async (id: string) => {
+    setLoading(true);
     try {
       const response = await getPaymentByOrderId(id);
       setPayment(response.data[0]);
     } catch (error) {
       console.error('Error fetching payment by order ID:', error);
+    } finally {
+      setLoading(false);
     }
   }
 
   const fetcheGetAddress = async (addressId: string) => {
+    setLoading(true);
     try {
       const response = await getAddressById(addressId);
       setAddress(response.data);
     } catch (error) {
       console.error('Error fetching address by ID:', error);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -195,6 +215,10 @@ export default function OrderView({ id }: OrderDetailPageProps) {
       }
     }
   }, [order, payment, address, orderCoupon]);
+
+  if (loading || !order) {
+    return <SplashScreen className="h-[80vh]" />;
+  }
   return (
     <div className="rounded-lg bg-fawhite w-full p-6">
       <div className="w-full">
@@ -203,7 +227,7 @@ export default function OrderView({ id }: OrderDetailPageProps) {
             <ChevronLeft /> Back
           </Link>
           <div className="flex justify-center items-center gap-1 text-right">
-            <span className="text-sm text-gray-600">Order ID: {order?.id}</span>
+            <span className="text-sm text-gray-600 text-center">Order ID: {order?.id}</span>
             <h1 className="text-2xl font-bold uppercase">{order?.status}</h1>
           </div>
         </div>

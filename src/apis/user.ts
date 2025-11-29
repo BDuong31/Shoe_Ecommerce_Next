@@ -15,7 +15,6 @@ interface IGetUserListParams {
 
 export const getUserProfile = async () : Promise<IApiResponse<IUserProfile>> => {
     const { data } = await axiosInstance.get(endpoints.user.profile);
-    console.log(data);
     return data;
 };
 
@@ -79,7 +78,11 @@ export const getUserList = async <T>({
   return data;
 };
 
-export const getListUser = async (): Promise<IApiResponse<IUserProfile[]>> => {
+export const getListUser = async (ids: string[]): Promise<IApiResponse<IUserProfile[]>> => {
+  if (ids && ids.length > 0) {
+    const { data } = await axiosInstance.post(endpoints.user.getListUser, { ids });
+    return data;
+  }
   const { data } = await axiosInstance.post(endpoints.user.getListUser);
   return data;
 }
@@ -101,6 +104,11 @@ export const getUserCoupons = async (): Promise<IApiResponse<IUserCoupon[]>> => 
 
 export const createUserCoupon = async (dto: IUserCouponCreate): Promise<IApiResponse<string>> => {
   const { data } = await axiosInstance.post(endpoints.user.createUserCoupon, dto);
+  return data;
+}
+
+export const checkUserCoupon = async (couponId: string): Promise<IApiResponse<string>> => {
+  const { data } = await axiosInstance.get(endpoints.user.checkUserCoupon(couponId));
   return data;
 }
 

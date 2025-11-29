@@ -7,7 +7,6 @@ const RatingList = ({ ratings }:any) =>{
         <div className='flex flex-col gap-5 3xl:max-w-[1500px] 2xl:max-w-[1450px] xl:max-w-[90%] lg:max-w-[90%] max-w-[95%]'>
             {ratings.map((rating:any) => (
                 <RatingItem rating={rating} />
-                // <ProductItem key={product.id} product={product} />
             ))}
         </div>
     )

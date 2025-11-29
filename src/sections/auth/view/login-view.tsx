@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
 import EyeRegular from "@/components/icons/eye";
 import EyeOffRegular from "@/components/icons/eye-off";
+import { SplashScreen } from "@/components/loading";
 
 export default function LoginView() {
     const router = useRouter();
@@ -74,7 +75,7 @@ export default function LoginView() {
     }, [isAuthenticated, router])
 
     if (loading) {
-        return <div className="text-center p-10">Đang tải...</div>;
+        return <SplashScreen className="h-[80vh]" />
     }
     return (
         <div className="flex gap-12 m-auto 3xl:max-w-[1500px] 2xl:max-w-[1450px] xl:max-w-[90%] lg:max-w-[90%] max-w-[95%]">

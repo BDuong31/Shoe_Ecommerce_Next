@@ -45,7 +45,8 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const showToast = (message: string, type: ToastType) => {
-    const id = crypto.randomUUID();
+    // const id = crypto.randomUUID(); // Sử dụng khi web có bảo mật HTTPS
+    const id = Math.random().toString(36).substring(2, 9); // Sử dụng phương pháp thay thế cho môi trường không HTTPS
     setToasts((prev) => [...prev, { id, message, type }]);
 
     setTimeout(() => {

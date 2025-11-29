@@ -7,6 +7,7 @@ import DebounceInput from '@/components/input/debounce-input';
 import { useToast } from '@/context/toast-context';
 import React, { useState, FormEvent } from 'react';
 import { changePasswordSchema } from '../data';
+import { SplashScreen } from '@/components/loading';
 
 export default function ChangePasswordScreen() {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -72,6 +73,9 @@ export default function ChangePasswordScreen() {
     }
   };
 
+  if (isLoading) {
+    return <SplashScreen className="h-[80vh]" />;
+  }
   return (
     <div className="flex flex-col w-full">
       <h1 className="text-2xl font-bold mb-1">Change Password</h1>

@@ -6,12 +6,11 @@ import Image from 'next/image';
 import ReviewForm from './ReviewForm'; // Import ReviewForm đã cập nhật
 
 interface ReviewModalProps {
-  isOpen: boolean; // Trạng thái mở/đóng modal
-  onClose: () => void; // Hàm đóng modal
-  productImage: string; // URL ảnh sản phẩm
-  productName: string; // Tên sản phẩm
-  // Hàm xử lý khi form đánh giá được submit bên trong modal
-  onReviewSubmit: (reviewData: { title: string, rating: number, description: string, files: File[] }) => void;
+  isOpen: boolean; 
+  onClose: () => void; 
+  productImage: string;
+  productName: string; 
+  onReviewSubmit: (reviewData: { rating: number, description: string, files: File[] }) => void;
 }
 
 const ReviewModal: React.FC<ReviewModalProps> = ({
@@ -21,7 +20,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
   productName,
   onReviewSubmit,
 }) => {
-  if (!isOpen) return null; // Không render gì nếu modal không mở
+  if (!isOpen) return null; 
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
@@ -36,9 +35,8 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
 
         <h2 className="text-[18px] font-bold text-center mb-2">Product reviews</h2>
 
-        {/* Thông tin sản phẩm */}
         <div className="flex flex-col items-center mb-2">
-          <div className="w-24 h-24 relative rounded-lg overflow-hidden border border-gray mb-2">
+          <div className="w-24 h-24 relative rounded-lg overflow-hidden mb-2">
             <Image
               src={productImage}
               alt={productName}

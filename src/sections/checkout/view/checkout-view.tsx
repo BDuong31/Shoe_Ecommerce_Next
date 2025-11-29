@@ -5,13 +5,15 @@ import { getImages } from "@/apis/image";
 import { applyCouponToOrder, createOrder, createOrderItem } from "@/apis/order";
 import { createPayment } from "@/apis/payment";
 import { createShipping } from "@/apis/shipping";
+import { checkUserCoupon } from "@/apis/user";
 import { getVariantById } from "@/apis/variant";
 import CheckoutDetails from "@/components/checkout/checkoutDetails";
 import CheckoutForm from "@/components/checkout/checkoutForm";
+import SplashScreen from "@/components/loading/splash-sceen";
 import { useCart } from "@/context/cart-context";
 import { useUserProfile } from "@/context/user-context";
 import { ICoupon } from "@/interfaces/coupon";
-import { IImage } from "@/interfaces/image";
+import { IConditionalImage, IImage } from "@/interfaces/image";
 import { IOrderCouponCreate, IOrderCreate, IOrderItemCreate } from "@/interfaces/order";
 import { IPaymentCreate } from "@/interfaces/payment";
 import { IProduct } from "@/interfaces/product";
@@ -19,17 +21,10 @@ import { IShippingCreate } from "@/interfaces/shipping";
 import { IProductVariant } from "@/interfaces/variant";
 import { useRouter } from "next/dist/client/components/navigation";
 import React, { use, useEffect } from "react";
-import { de } from "zod/v4/locales";
 
 type CheckoutFormData = {
   addressId?: string | null;
   deliveryOption: 'standard' | 'collect';
-}
-
-
-type CheckoutFormProps = {
-    amount: number;
-    onSubmit?: (data: CheckoutFormData) => void;
 }
 
 export default function CheckoutView() {
@@ -39,7 +34,6 @@ export default function CheckoutView() {
     const [amount, setAmount] = React.useState<number>(100);
     const [data, setData] = React.useState<CheckoutFormData | null>(null);
     const [coupon, setCoupon] = React.useState<ICoupon>();
-    const [images, setImages] = React.useState<Record<string, IImage[]>>({});
     const [variantMap, setVariantMap] = React.useState<Record<string, IProductVariant>>({});
     const [cartTotal, setCartTotal] = React.useState(0);
     const [voucherDiscount, setVoucherDiscount] = React.useState<number>(0);
@@ -47,6 +41,8 @@ export default function CheckoutView() {
     const [deliveryOption, setDeliveryOption] = React.useState<'standard' | 'collect'>('standard');
     const [orderId, setOrderId] = React.useState<string | null>(null);
     const [paymentId, setPaymentId] = React.useState<string | null>(null);
+    const [loading, setLoading] = React.useState(false);
+    
     const handleSubmit = async (data: CheckoutFormData) => {
         console.log('Checkout form submitted with data:', data);
         setData(data);
@@ -118,95 +114,109 @@ export default function CheckoutView() {
     useEffect(() => {
         console.log('Payment ID changed:', paymentId);
         if (paymentId && paymentId !== null) {
-            router.push(`/payment/${paymentId.id}`);
+            router.push(`/payment/${paymentId}`);
         }
     }, [paymentId]);
 
     const fetcheCreateOrder = async (orderData: IOrderCreate) => {
+        setLoading(true);
         try {
             const response = await createOrder(orderData);
             return setOrderId(response.data);
         } catch (error) {
             console.error('Error creating order:', error);
             return null;
+        } finally {
+            setLoading(false);
         }
     }
 
     async function fetcheCreateOrderItems(orderItemData: IOrderItemCreate) {
+        setLoading(true);
         try {
             const response = await createOrderItem(orderItemData);
             return response.data;
         } catch (error) {
             console.error('Error creating order item:', error);
             return null;
+        } finally {
+            setLoading(false);
         }
     }
 
     async function fetcheApplyCouponToOrder(orderCouponData: IOrderCouponCreate) {
+        setLoading(true);
         try {
             const response = await applyCouponToOrder(orderCouponData);
             return response.data;
         } catch (error) {
             console.error('Error applying coupon to order:', error);
             return null;
+        } finally {
+            setLoading(false);
         }
     }
 
     async function fetcheCreatePayment(PaymentData: IPaymentCreate) {
-        console.log('Creating payment...');
+        setLoading(true);
         try {
             const response = await createPayment(PaymentData);
-            setPaymentId(response);  
+            setPaymentId(response.id);  
         } catch (error) {
             console.error('Error creating payment:', error);
             return null;
+        } finally {
+            setLoading(false);
         }
     }
     const fetcheCreateShipping = async (ShippingData: IShippingCreate) => {
+        setLoading(true);
         try {
             const response = await createShipping(ShippingData);
             return response.data;   
         } catch (error) {
             console.error('Error creating shipping:', error);
             return null;
+        } finally {
+            setLoading(false);
         }
     }
 
     async function fetcheDeleteCartItem(cartItemId: string) {
+        setLoading(true);
         try {
             const response = await deleteCartItem(cartItemId);
             return response.data;   
         } catch (error) {
             console.error('Error deleting cart item:', error);
             return null;
+        } finally {
+            setLoading(false);
         }
     }
 
     const fetcheVarants = async (variantId: string) => {
+        setLoading(true);
         try {
             const response = await getVariantById(variantId);
             return response.data;
         } catch (error) {
             console.error('Error fetching variant:', error);
             return null;
-        }
-    }
-
-    const fetcheImages = async (productId: string) => {
-        try {
-            const response = await getImages(productId)
-            setImages(prevImages => ({...prevImages, [productId]: response.data }));
-        } catch (error) {
-            console.error('Error fetching images:', error);
+        } finally {
+            setLoading(false);
         }
     }
 
     const fetcheCoupon = async (code: string) => {
+        setLoading(true);
         try {
             const response = await getCouponByCondition({ code });
             setCoupon(response.data[0]);
         } catch (error) {
             console.error('Error fetching coupon:', error);
+        } finally {
+            setLoading(false);
         }
     }
 
@@ -217,6 +227,18 @@ export default function CheckoutView() {
             return false;
         }
         return true;
+    }
+
+    const checkUseUsageLimit = async (couponId: string) => {
+        setLoading(true);
+        try {
+            const response = await checkUserCoupon(couponId)
+            
+        } catch (error) {
+            console.error('Error checking coupon usage limit:', error);
+        } finally {
+            setLoading(false);
+        }
     }
 
     const handleDeliveryOptionChange = (option: 'standard' | 'collect') => {
@@ -245,19 +267,6 @@ export default function CheckoutView() {
         }
         fetchAllVariants();
     }, [cartItem])
-
-    React.useEffect(() => {
-        if (Object.keys(variantMap).length > 0) {
-            if (cartItem && cartItem.length > 0) {
-                cartItem.forEach((item) => {
-                    const variant = variantMap[item.variantId];
-                    if (variant) {
-                        fetcheImages(variant.productId);
-                    }
-                });
-            }
-        }
-    }, [variantMap]);
 
     React.useEffect(() => {
         if (!cartItem || !variantMap) {
@@ -303,7 +312,10 @@ export default function CheckoutView() {
             setTotalAfterDiscount(totalAfferDelivery);
         }
     }, [coupon, cartTotal, deliveryOption]);
-    
+
+    if (loading) {
+        return <SplashScreen className="h-[80vh]" />
+    }
     return (
         <div className="m-auto 3xl:max-w-[1500px] 2xl:max-w-[1450px] xl:max-w-[90%] lg:max-w-[90%] max-w-[95%] py-10">
             <div className="h-auto lg:grid grid-cols-2 gap-10">
@@ -314,7 +326,7 @@ export default function CheckoutView() {
 
                 <div className='h-auto relative mt-8 lg:mt-0'>
                     <div className="lg:absolute lg:top-0 lg:left-0 lg:w-full lg:h-full lg:overflow-hidden">
-                        <CheckoutDetails cartTotal={cartTotal} cartCount={cart?.totalItem} deliveryFee={deliveryOption === 'standard' ? 60000 : 0}  voucherDiscount={voucherDiscount} totalAfterDiscount={totalAfterDiscount} variantMap={variantMap} images={images} />
+                        <CheckoutDetails cartTotal={cartTotal} cartCount={cart?.totalItem} deliveryFee={deliveryOption === 'standard' ? 60000 : 0}  voucherDiscount={voucherDiscount} totalAfterDiscount={totalAfterDiscount} variantMap={variantMap} />
                     </div>
                 </div>
 

@@ -4,8 +4,14 @@ import { Search, X } from 'lucide-react';
 import SearchRegular, { SearchBold } from '../icons/search';
 import mockProduct from '@/sections/home/data/product';
 import { useRouter } from 'next/dist/client/components/navigation';
+import { IProductDetails } from '@/interfaces/product';
+import { IConditionalImage, IImage } from '@/interfaces/image';
+import { getProducts } from '@/apis/product';
+import { getImages } from '@/apis/image';
+import { set } from 'zod';
+import { SplashScreen } from '../loading';
 
-const SearchResultItem = ({ item, closePopup, setSearchQuery }: { item: typeof mockProduct[0], closePopup: () => void, setSearchQuery: React.Dispatch<React.SetStateAction<string>> }) => {
+const SearchResultItem = ({ item, image, closePopup, setSearchQuery }: { item: IProductDetails, image: IImage[], closePopup: () => void, setSearchQuery: React.Dispatch<React.SetStateAction<string>> }) => {
     const router = useRouter();
     return (
         <div 
@@ -17,7 +23,7 @@ const SearchResultItem = ({ item, closePopup, setSearchQuery }: { item: typeof m
             className="flex items-center gap-4 p-2"
         >
             <img 
-                src={item.images} 
+                src={image[0]?.url} 
                 alt={item.productName} 
                 className="h-24 w-24 rounded-lg object-cover" 
             />
@@ -33,14 +39,62 @@ export default function SearchPopup() {
     const router = useRouter();
     const [isOpen, setIsOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-    const products = mockProduct;
+    const [loading, setLoading] = useState(false);
+    const [products, setProducts] = React.useState<IProductDetails[]>([]);
+    const [images, setImages] = React.useState<Record<string, IImage[]>>({});
 
     const openPopup = () => setIsOpen(true);
     const closePopup = () => {setIsOpen(false); setSearchQuery('');};
 
-    const filteredResults = products.filter(item => 
+    const fetchProducts = async () => {
+        setLoading(true);
+        try {
+            const response = await getProducts();
+            setProducts(response.data);
+        } catch (error) {
+            console.error('Error fetching products:', error);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    const fetcheImagesForProducts = async (productIds: string[]) => {
+        setLoading(true);
+        try {
+            const imageMap: Record<string, IImage[]> = {};
+            for (const productId of productIds) {
+                try {
+                    const dto: IConditionalImage = {
+                        refId: productId,
+                        type: 'product',
+                        isMain: true,   
+                    }
+                    const response = await getImages(dto); 
+                    setImages(prevImages => ({ ...prevImages, [productId]: response.data }));
+                } catch (error) {
+                    console.error(`Error fetching images for product ${productId}:`, error);
+                    imageMap[productId] = [];
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching images:', error);
+        } finally {
+            setLoading(false);
+        }
+    }
+    
+    React.useEffect(() => {
+        fetchProducts();
+    }, []);
+
+    React.useEffect(() => {
+        const productIds = products.map(product => product.id);
+        fetcheImagesForProducts(productIds);
+    }, [products]);
+
+    const filteredResults = searchQuery ? products.filter(item => 
         item?.productName.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    ) : [];
 
     const normalizeSearchQuery = (query: string) => {
         return query.trim().toLowerCase().replace(/\s+/g, '-');
@@ -60,6 +114,10 @@ export default function SearchPopup() {
             handleSearchSubmit();
         }
     };
+
+    if (loading) {
+        return <SplashScreen className="h-[80vh]" />;
+    }
 
     return (
         <div>
@@ -106,7 +164,7 @@ export default function SearchPopup() {
                             <div className="flex flex-col gap-4">
                                 {filteredResults.length > 0 ? (
                                     filteredResults.map(item => (
-                                        <SearchResultItem key={item.id} item={item} closePopup={closePopup} setSearchQuery={setSearchQuery} />
+                                        <SearchResultItem key={item.id} item={item} image={images[item.id]} closePopup={closePopup} setSearchQuery={setSearchQuery} />
                                     ))
                                 ) : (
                                     <p className="text-center text-gray-500">No results found.</p>

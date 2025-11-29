@@ -9,6 +9,7 @@ import React from "react";
 import { FaApple, FaFacebook, FaGoogle } from "react-icons/fa";
 import { registerSchema } from "../data/schema";
 import { useRouter } from "next/navigation"; 
+import SplashScreen from "@/components/loading/splash-sceen";
 
 export default function RegisterView() {
     const { isAuthenticated } = useAuth();
@@ -87,7 +88,7 @@ export default function RegisterView() {
     }, [isAuthenticated, router]);
 
     if (loading) {
-        return <div className="text-center p-10">Đang tải...</div>;
+        return <SplashScreen className="h-[80vh]" />
     }
 
     return (

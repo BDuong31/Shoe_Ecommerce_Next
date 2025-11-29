@@ -17,7 +17,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     );
 
     const setToken = (newToken: string | null) => {
-        console.log(newToken)
         setTokenState(newToken);
         if(newToken){
             sessionStorage.setItem('token', newToken);

@@ -9,7 +9,6 @@ type CategoryProps = {
 }
 
 const Category = ( {category} : CategoryProps) => {
-  console.log(category);
   return (
     <Link className='relative' href={`/categories/${category.id}`}>
         <div className='h-auto w-full py-14 bg-[#eaefef] rounded-3xl'>

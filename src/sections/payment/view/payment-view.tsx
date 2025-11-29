@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { IPayment } from "@/interfaces/payment";
 import { getPaymentById, initiatePayment } from "@/apis/payment";
 import { useToast } from "@/context/toast-context";
+import SplashScreen from "@/components/loading/splash-sceen";
 
 interface PaymentViewProps {
     id: string;
@@ -48,7 +49,7 @@ export default function PaymentView({ id }: PaymentViewProps) {
     const [selectedMethod, setSelectedMethod] = React.useState<PaymentMethodId>('cod');
     const [selectedMethodChild, setSelectedMethodChild] = React.useState<string>('');
 
-    const [loading, setLoading] = React.useState(false);
+    const [loading, setLoading] = React.useState(true);
     const [error, setError] = React.useState<string | null>(null);
     const { showToast } = useToast()
     const handleMethodChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,8 +57,9 @@ export default function PaymentView({ id }: PaymentViewProps) {
     };
 
     const fetchePayment = async (paymentId: string) => {
+        setLoading(true);
         try {
-            const response = await getPaymentById(paymentId);
+            const response = await getPaymentById(paymentId)
             if (response) {
                 setPayment(response.data);
             } else {
@@ -65,6 +67,8 @@ export default function PaymentView({ id }: PaymentViewProps) {
             }
         } catch (error) {
             console.error('Error fetching payment:', error);
+        } finally {
+            setLoading(false);
         }
     }
 
@@ -109,6 +113,10 @@ export default function PaymentView({ id }: PaymentViewProps) {
         } finally {
             setLoading(false);
         }
+    }
+
+    if (loading) {
+        return <SplashScreen className="h-[80vh]"/>;
     }
 
     return (

@@ -3,26 +3,27 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Trash2, UploadCloud, X } from 'lucide-react';
-import ImageRegular from '@/components/icons/image';
 import Image from 'next/image';
 import { useDropzone } from 'react-dropzone';
-import { IProduct, IProductCreate } from '@/interfaces/product';
+import { IProductCreate } from '@/interfaces/product';
 import { IProductVariant, IVariantCreate } from '@/interfaces/variant';
 import { useToast } from '@/context/toast-context';
 import { IImageCreate } from '@/interfaces/image';
-import { IApiResponse } from '@/interfaces/api-response';
 import { createProduct } from '@/apis/product';
 import { createVariant } from '@/apis/variant';
 import { uploadImage } from '@/apis/image';
-
-// +++ IMPORTS MỚI +++
 import { getBrands } from '@/apis/brand';
 import { getCategories } from '@/apis/category';
 import { IBrand } from '@/interfaces/brand';
 import { ICategory } from '@/interfaces/category';
-// ++++++++++++++++++++
+import ImageRegular from '@/components/icons/image';
 
 const MAX_IMAGES = 4;
+
+interface FileWithPreview {
+  file: File;
+  preview: string;
+}
 
 export default function ProductCreateView() { 
   const router = useRouter();
@@ -39,14 +40,29 @@ export default function ProductCreateView() {
   });
   
   const [variants, setVariants] = useState<IVariantCreate[]>([]);
-  
-  const [galleryImages, setGalleryImages] = useState<string[]>([]);
+  const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [coverImage, setCoverImage] = useState<string | null>(null);
-  const [newFiles, setNewFiles] = useState<File[]>([]);
-
-  // +++ STATE MỚI ĐỂ LƯU DANH SÁCH BRAND/CATEGORY +++
   const [brands, setBrands] = useState<IBrand[]>([]);
   const [categories, setCategories] = useState<ICategory[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [brandResponse, categoryResponse] = await Promise.all([
+          getBrands(),
+          getCategories()
+        ]);
+
+        if (brandResponse.data) setBrands(brandResponse.data);
+        if (categoryResponse.data) setCategories(categoryResponse.data);
+
+      } catch (error) {
+        showToast('Error loading page data.', 'error');
+      }
+    };
+
+    fetchData();
+  }, [showToast]);
 
   const handleProductChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -57,7 +73,7 @@ export default function ProductCreateView() {
     const { name, value } = e.target;
     const updatedVariants = [...variants];
     
-    if (name === 'quantity' || name === 'price') {
+    if (name === 'quantity' || name === 'price' || name === 'size') {
       updatedVariants[index] = { ...updatedVariants[index], [name]: parseFloat(value) || 0 };
     } else {
       updatedVariants[index] = { ...updatedVariants[index], [name]: value };
@@ -66,30 +82,35 @@ export default function ProductCreateView() {
     setVariants(updatedVariants);
   };
 
-  const addVariant = () => { setVariants([...variants, { size: '', color: '', sku: '', quantity: 0, price: 0 } ]); };
-  const removeVariant = (index: number) => { setVariants(variants.filter((_, i) => i !== index)); };
+  const addVariant = () => { 
+    setVariants([...variants, { size: 0, color: '', sku: '', quantity: 0, productId: '' }]); 
+  };
+
+  const removeVariant = (index: number) => { 
+    setVariants(variants.filter((_, i) => i !== index)); 
+  };
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    const currentTotalImages = galleryImages.length;
-    const newFilesCount = acceptedFiles.length;
-
-    if (currentTotalImages + newFilesCount > MAX_IMAGES) {
+    if (files.length + acceptedFiles.length > MAX_IMAGES) {
       showToast(`Giới hạn tối đa là ${MAX_IMAGES} ảnh.`, 'warning');
       return;
     }
 
-    setNewFiles(prev => [...prev, ...acceptedFiles]);
-    
-    const newImagePreviews = acceptedFiles.map(file => URL.createObjectURL(file));
-    setGalleryImages(prev => [...prev, ...newImagePreviews]);
+    const newFilesMapped: FileWithPreview[] = acceptedFiles.map(file => ({
+        file,
+        preview: URL.createObjectURL(file)
+    }));
 
-    if (!coverImage && newImagePreviews[0]) {
-      setCoverImage(newImagePreviews[0]);
-    }
+    setFiles(prev => {
+        const updated = [...prev, ...newFilesMapped];
+        if (!coverImage && newFilesMapped.length > 0) {
+            setCoverImage(newFilesMapped[0].preview);
+        }
+        return updated;
+    });
+  }, [files, coverImage, showToast]);
 
-  }, [galleryImages, coverImage, showToast]);
-
-  const isGalleryFull = galleryImages.length >= MAX_IMAGES;
+  const isGalleryFull = files.length >= MAX_IMAGES;
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -97,84 +118,37 @@ export default function ProductCreateView() {
     disabled: isGalleryFull
   });
 
-  const handleRemoveImage = (e: React.MouseEvent, imageToRemove: string) => {
-    e.stopPropagation(); 
+  const handleRemoveImage = (e: React.MouseEvent, previewToRemove: string) => {
+    e.stopPropagation();
     
-    const fileToRemove = newFiles.find(file => URL.createObjectURL(file) === imageToRemove);
+    const newFilesList = files.filter(item => item.preview !== previewToRemove);
+    setFiles(newFilesList);
     
-    setGalleryImages(prev => prev.filter(img => img !== imageToRemove));
-    if (fileToRemove) {
-        setNewFiles(prev => prev.filter(file => file !== fileToRemove));
+    if (coverImage === previewToRemove) {
+      setCoverImage(newFilesList.length > 0 ? newFilesList[0].preview : null);
     }
     
-    if (coverImage === imageToRemove) {
-      setCoverImage(null);
-    }
-    console.log("Đã xóa ảnh (preview):", imageToRemove);
+    URL.revokeObjectURL(previewToRemove);
   };
   
   const handleSetCoverImage = (imageToSet: string) => {
     setCoverImage(imageToSet);
   };
 
-  // +++ USEEFFECT MỚI ĐỂ GỌI API GET BRANDS VÀ CATEGORIES +++
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Gọi API song song
-        const [brandResponse, categoryResponse] = await Promise.all([
-          getBrands(),
-          getCategories()
-        ]);
-
-        // Xử lý brand
-        if (brandResponse.data) {
-          setBrands(brandResponse.data);
-        } else {
-          showToast('Failed to fetch brands', 'error');
-        }
-        
-        // Xử lý category
-        if (categoryResponse.data) {
-          console.log(categoryResponse.data);
-          setCategories(categoryResponse.data);
-        } else {
-          showToast('Failed to fetch categories', 'error');
-        }
-
-      } catch (error) {
-        console.error("Failed to fetch initial data", error);
-        showToast('Error loading page data.', 'error');
-      }
-    };
-
-    fetchData();
-  }, []); // Thêm showToast vào dependency array
-  // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-  useEffect(() => {
-    if (!coverImage && galleryImages.length > 0) {
-      setCoverImage(galleryImages[0]);
-    }
-  }, [galleryImages, coverImage]);
-
   const handleCreate = async () => {
     setIsLoading(true);
 
     if (!product.productName || !product.price || !product.categoryId || !product.brandId) {
-      showToast('Vui lòng điền đầy đủ thông tin sản phẩm (Tên, Giá, Danh mục, Thương hiệu).', 'error');
-      setIsLoading(false);
-      return;
+      showToast('Vui lòng điền đầy đủ thông tin sản phẩm.', 'error');
+      setIsLoading(false); return;
     }
-    if (newFiles.length === 0) {
+    if (files.length === 0) {
       showToast('Vui lòng tải lên ít nhất 1 ảnh.', 'error');
-      setIsLoading(false);
-      return;
+      setIsLoading(false); return;
     }
     if (!coverImage) {
       showToast('Vui lòng chọn 1 ảnh làm bìa chính.', 'error');
-      setIsLoading(false);
-      return;
+      setIsLoading(false); return;
     }
 
     let newProductId: string | undefined = undefined;
@@ -187,16 +161,10 @@ export default function ProductCreateView() {
         brandId: product.brandId || '',
         categoryId: product.categoryId || '',
       };
-      console.log('Creating product with payload:', productPayload);
 
       const productResponse = await createProduct(productPayload)
-
-      if (!productResponse) {
-        throw new Error('Không thể tạo sản phẩm.');
-      }
-
-      newProductId = productResponse?.data;
-      console.log('Product created with ID:', newProductId);
+      if (!productResponse) throw new Error('Không thể tạo sản phẩm.');
+      newProductId = productResponse;
 
       if (variants.length > 0) {
         const variantPromises = variants.map(variant => {
@@ -209,51 +177,31 @@ export default function ProductCreateView() {
           };
           return createVariant(variantPayload);
         });
-
-        const variantResults = await Promise.all(variantPromises);
-        variantResults.forEach(result => {
-          const res = result as any as IApiResponse<IProductVariant>;
-          if (!res) {
-            console.error('Tạo variant thất bại:');
-          }
-        });
-        console.log('Variants created');
+        await Promise.all(variantPromises);
       }
 
-      const imagePromises = newFiles.map(file => {
-        const filePreviewUrl = URL.createObjectURL(file);
-        const isCover = (coverImage === filePreviewUrl);
-
+      const imagePromises = files.map(item => {
+        const isCover = (coverImage === item.preview);
         const imageDto: IImageCreate = {
           isMain: isCover,
           refId: newProductId!,
           type: 'product',
         };
-        
-        return uploadImage(imageDto, file);
+        return uploadImage(imageDto, item.file);
       });
 
-      const imageResults = await Promise.all(imagePromises);
-      imageResults.forEach(result => {
-        const res = result as any as IApiResponse<any>;
-        if (!res) {
-          console.error('Upload ảnh thất bại:');
-        }
-      });
-      console.log('Images uploaded');
+      await Promise.all(imagePromises);
 
       showToast('Tạo sản phẩm mới thành công!', 'success');
       router.push('/products');
 
     } catch (error) {
-      console.error('Lỗi khi tạo sản phẩm:', error);
       const errorMessage = error instanceof Error ? error.message : 'Đã xảy ra lỗi không xác định.';
       showToast(`Lỗi: ${errorMessage}`, 'error');
     } finally {
       setIsLoading(false);
     }
   };
-
 
   return (
     <div className="flex flex-col gap-6 p-6 max-h-[90vh] overflow-y-auto scrollbar-hide">
@@ -265,7 +213,6 @@ export default function ProductCreateView() {
       <div className="grid grid-cols-1 lg:grid-cols-3 bg-white gap-6 rounded-2xl p-6">
         
         <div className="lg:col-span-2 space-y-6">
-          
           <div className="gap-6">
               <div className="form-control gap-4">
                 <label className="font-semibold"><span className="label-text">Product Name</span></label>
@@ -281,7 +228,6 @@ export default function ProductCreateView() {
                   <input type="number" name="price" value={product.price || 0} onChange={handleProductChange} className="input input-bordered" placeholder="0.00" />
                 </div>
                 
-                {/* +++ THAY THẾ INPUT THÀNH SELECT CHO CATEGORY +++ */}
                 <div className="form-control">
                   <label className="label"><span className="label-text">Category</span></label>
                   <select 
@@ -292,15 +238,11 @@ export default function ProductCreateView() {
                   >
                     <option value="" disabled>Choose a category</option>
                     {categories.map(category => (
-                      <option key={category.id} value={category.id}>
-                        {category.name} {/* Giả định interface ICategory có 'name'. Sửa nếu tên thuộc tính khác */}
-                      </option>
+                      <option key={category.id} value={category.id}>{category.name}</option>
                     ))}
                   </select>
                 </div>
-                {/* ++++++++++++++++++++++++++++++++++++++++++++++ */}
 
-                {/* +++ THAY THẾ INPUT THÀNH SELECT CHO BRAND +++ */}
                 <div className="form-control">
                   <label className="label"><span className="label-text">Brand Name</span></label>
                   <select 
@@ -311,14 +253,10 @@ export default function ProductCreateView() {
                   >
                     <option value="" disabled>Choose a brand</option>
                     {brands.map(brand => (
-                      <option key={brand.id} value={brand.id}>
-                        {brand.name} {/* Giả định interface IBrand có 'name'. Sửa nếu tên thuộc tính khác */}
-                      </option>
+                      <option key={brand.id} value={brand.id}>{brand.name}</option>
                     ))}
                   </select>
                 </div>
-                {/* +++++++++++++++++++++++++++++++++++++++++++ */}
-
               </div>
           </div>
 
@@ -335,7 +273,7 @@ export default function ProductCreateView() {
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                       <div className="form-control">
                         <label className="label"><span className="label-text">Size</span></label>
-                        <input type="text" name="size" placeholder="e.g., 40" value={variant.size || ''} onChange={(e) => handleVariantChange(index, e)} className="input input-bordered input-sm" />
+                        <input type="number" name="size" placeholder="e.g., 40" value={variant.size || ''} onChange={(e) => handleVariantChange(index, e)} className="input input-bordered input-sm" />
                       </div>
                       <div className="form-control">
                         <label className="label"><span className="label-text">Color</span></label>
@@ -376,70 +314,56 @@ export default function ProductCreateView() {
                   border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center 
                   text-center h-48
                   ${isDragActive ? 'border-primary bg-primary/10' : 'border-gray-300'}
-                  ${isGalleryFull || isLoading
-                    ? 'cursor-not-allowed bg-base-200 opacity-60' 
-                    : 'cursor-pointer'
-                  }
+                  ${isGalleryFull || isLoading ? 'cursor-not-allowed bg-base-200 opacity-60' : 'cursor-pointer'}
                 `}
               >
                 <input {...getInputProps()} />
-                <UploadCloud size={48} className="text-base-content/50" />
+                <ImageRegular width={48} height={48} className="text-base-content/50" />
                 <p className="mt-2 text-sm text-base-content/70">
-                  {isGalleryFull
-                    ? `Đã đạt giới hạn (${MAX_IMAGES} ảnh)`
-                    : isDragActive 
-                      ? 'Thả ảnh vào đây' 
-                      : 'Kéo thả, hoặc click để chọn ảnh'
-                  }
+                  {isGalleryFull ? `Đã đạt giới hạn (${MAX_IMAGES} ảnh)` : isDragActive ? 'Thả ảnh vào đây' : 'Kéo thả hoặc chọn ảnh'}
                 </p>
-                <p className="text-xs text-base-content/50">Tối đa {MAX_IMAGES} ảnh. (jpeg, png)</p>
+                <p className="text-xs text-base-content/50">Max {MAX_IMAGES} images.</p>
               </div>
               
               <div className="space-y-2 mt-4">
-                {galleryImages.map((image, index) => {
-                  const file = newFiles.find(f => URL.createObjectURL(f) === image);
-                  return (
-                    <div key={index} className="flex items-center justify-between p-2 border rounded-lg">
-                      <div className="flex items-center gap-2 overflow-hidden">
-                        <Image 
-                          src={image} 
-                          alt="Thumbnail"
-                          width={40} height={40}
-                          className="w-10 h-10 rounded object-cover bg-base-200 flex-shrink-0"
-                        />
-                        <span className="text-sm truncate">
-                          {file ? file.name : `New Image ${index+1}`}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <input 
-                          type="radio" 
-                          name="coverImage"
-                          checked={coverImage === image}
-                          onChange={() => handleSetCoverImage(image)}
-                          className="radio radio-primary radio-sm"
-                          title="Set as cover image"
-                          disabled={isLoading}
-                        />
-                        <button 
-                          className="btn btn-ghost btn-xs btn-circle text-error"
-                          onClick={(e) => handleRemoveImage(e, image)}
-                          title="Delete image"
-                          disabled={isLoading}
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
+                {files.map((item, index) => (
+                  <div key={index} className="flex items-center justify-between p-2 border rounded-lg">
+                    <div className="flex items-center gap-2 overflow-hidden">
+                      <Image 
+                        src={item.preview} 
+                        alt="Thumbnail"
+                        width={40} height={40}
+                        className="w-10 h-10 rounded object-cover bg-base-200 flex-shrink-0"
+                      />
+                      <span className="text-sm truncate max-w-[150px]">
+                        {item.file.name}
+                      </span>
                     </div>
-                  );
-                })}
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <input 
+                        type="radio" 
+                        name="coverImage"
+                        checked={coverImage === item.preview}
+                        onChange={() => handleSetCoverImage(item.preview)}
+                        className="radio radio-primary radio-sm"
+                        disabled={isLoading}
+                      />
+                      <button 
+                        className="btn btn-ghost btn-xs btn-circle text-error"
+                        onClick={(e) => handleRemoveImage(e, item.preview)}
+                        disabled={isLoading}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
           </div>
         </div>
         
         <div className="lg:col-span-3 card-body flex-row justify-end gap-4">
-            <button className="btn" onClick={() => router.push('/products')} disabled={isLoading}>CANCEL</button>
-            
+            <button className="btn" onClick={() => router.back()} disabled={isLoading}>CANCEL</button>
             <button className="btn btn-neutral" onClick={handleCreate} disabled={isLoading}>
                 {isLoading ? <span className="loading loading-spinner"></span> : 'SAVE PRODUCT'}
             </button>

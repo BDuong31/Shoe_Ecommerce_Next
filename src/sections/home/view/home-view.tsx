@@ -1,33 +1,33 @@
 'use client';
-import Footer from "@/components/footer";
 import Image from "next/image";
 import Link from "next/link";
-import mockProduct from "../data/product";
-import { mockReviews } from "../data/preview";
-import mockCategories from "../data/category";
-import ProductList, { ProductListLaster } from "@/components/product/productList";
+import { ProductListLaster } from "@/components/product/productList";
 import { GrFormPrevious, GrFormNext } from "react-icons/gr";
-import React, { useState, useCallback } from "react"; // Tambahkan useCallback
+import React, { useState, useCallback, useEffect } from "react"; // Tambahkan useCallback
 import Category from "@/components/category/category";
-import ReviewSection from "@/components/review/reviewList";
 import ReviewItem from "@/components/review/reviewItem";
 import { useUserProfile } from "@/context/user-context";
 import { getProducts } from "@/apis/product";
-import { IProduct, IProductDetails } from "@/interfaces/product";
+import { IProductDetails } from "@/interfaces/product";
 import { IConditionalImage, IImage } from "@/interfaces/image";
 import { getImages } from "@/apis/image";
 import { ICategory } from "@/interfaces/category";
 import { getCategories } from "@/apis/category";
-import { set } from "zod";
+import { SplashScreen } from "@/components/loading";
+import { IRating, IRatingWithUser } from "@/interfaces/rating";
+import { getAllRatings } from "@/apis/rating";
+import { IProductVariant } from "@/interfaces/variant";
+import { getVariants } from "@/apis/variant";
 export default function HomeView() {
-    const { userProfile } = useUserProfile()
+    const { userProfile, loading } = useUserProfile()
     const [products, setProducts] = useState<IProductDetails[]>([]);
+    const [variants, setVariants] = useState<Record<string, IProductVariant[]>>({});
     const [category, setCategory] = useState<ICategory[]>([]);
-    const [images, setImages] = useState<Record<string, IImage[]>>({});
-    const reviews = mockReviews;
+    const [reviews, setReviews] = useState<IRatingWithUser[]>([]);
     const [categories, setCategories] = useState<ICategory[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(0);
+    const [isLoading, setIsLoading] = useState(false);
 
     const calculateItemsPerPage = () => {
         if (typeof window === 'undefined') {
@@ -45,53 +45,77 @@ export default function HomeView() {
 
 
     const fetcherProducts = async () => {
+        setIsLoading(true);
         try {
             const response = await getProducts();
             setProducts(response.data);
         } catch (error) {
             console.error('Error fetching products:', error);
+        } finally {
+            setIsLoading(false);
         }
     }
 
-    const fetcherImages = async (id: string) => {
+    const fetcherVariants = async (productId: string) => {
         try {
-            const dto: IConditionalImage = {
-                refId: id,
-                type: 'product',
-            }
-            const response = await getImages(dto);
-            setImages(prevImages => ({ ...prevImages, [id]: response.data }));
+            const response = await getVariants(productId);
+            return response.data;
         } catch (error) {
-            console.error('Error fetching images:', error);
+            console.error('Error fetching images for product', productId, error);
+            return [];
         }
     }
 
     const fetcherCategory = async () => {
+        setIsLoading(true);
         try {
             const response = await getCategories();
             setCategory(response.data);
         } catch (error) {
             console.error('Error fetching categories:', error);
         }
+        finally {
+            setIsLoading(false);
+        }
+    }
+
+    const fetchRatings = async () => {
+        setIsLoading(true);
+        try {
+            const response = await getAllRatings();
+            setReviews(response.data);
+
+        } catch (error) {
+            console.error('Error fetching ratings:', error);
+        }
+        finally {
+            setIsLoading(false);
+        }
     }
 
     React.useEffect(() => {
         fetcherProducts();
         fetcherCategory();
+        fetchRatings();
     }, []);
-
-    React.useEffect(() => {
-        products.forEach(product => {
-            fetcherImages(product.id);
-        });
-    }, [products]);
 
     const reviewSection = reviews.slice(0, calculateItemsPerPage());
     const latestProducts = products.slice(0, 4);
-    const latestImages = Object.fromEntries(
-        Object.entries(images).filter(([key]) => latestProducts.some(product => product.id === key))
-    );
 
+    useEffect(() => {
+        const fetchAllVariants = async () => {
+            const variantsData: Record<string, IProductVariant[]> = {};
+            for (const product of latestProducts) {
+                const productVariants = await fetcherVariants(product.id);
+                variantsData[product.id] = productVariants;
+            }
+            setVariants(variantsData);
+        };
+
+        if (latestProducts.length > 0) {
+            fetchAllVariants();
+        }
+    }, [latestProducts]);
     const calculateCategoriesPage = useCallback(() => {
         if (!category.length) return;
 
@@ -139,6 +163,9 @@ export default function HomeView() {
         setCurrentPage(prev => Math.min(totalPages, prev + 1));
     }
 
+    if (isLoading && loading) {
+        return <SplashScreen className="h-[80vh]"/>;
+    }
 
     return (
     <>
@@ -164,8 +191,8 @@ export default function HomeView() {
                     <Link className="bg-blue uppercase text-white py-3 px-6 text-[14px] rounded-lg" href={'/newdrops'}>SHOP NEW DROPS</Link>
                 </div>
             </div>
-            <div className="py-12">
-                <ProductListLaster products={latestProducts} images={latestImages} length={4} />
+            <div className="py-12 m-auto 3xl:max-w-[1500px] 2xl:max-w-[1450px] xl:max-w-[90%] lg:max-w-[90%] max-w-[95%] max-h-[700px]">
+                <ProductListLaster products={latestProducts} variants={variants} length={4} />
             </div>
         </div>
         <div className='bg-darkgrey py-24 px-6 md:px-0'>
@@ -194,15 +221,12 @@ export default function HomeView() {
         <div className='px-6 md:px-0'>
             <div className={`pt-20 flex m-auto 3xl:max-w-[1500px] 2xl:max-w-[1450px] xl:max-w-[90%] lg:max-w-[90%] max-w-[95%]`}>
                 <h1 className='2xl:text-[74px] xl:text-[60px] lg:text-[50px] md:text-[40px] sm:text-[30px] text-[24px] font-semibold uppercase flex-1 2xl:leading-[70px] xl:leading-[60px] lg:leading-[50px] md:leading-[40px] sm:leading-[30px] text-darkgrey'>REVIEWS</h1>
-                <div className='flex-1 text-right self-end'>
-                    <button className='bg-blue uppercase text-white py-3 px-6 text-[14px] rounded-lg'>SEE ALL</button>
-                </div>
             </div>
             <div className={`pt-12 grid sm:grid-cols-2 grid-cols-1 xl:grid-cols-3 3xl:grid-cols-4 gap-9 m-auto 3xl:max-w-[1500px] 2xl:max-w-[1450px] xl:max-w-[90%] lg:max-w-[90%] max-w-[95%] `}>
                 {
-                    reviewSection.map((review : any, index) => (
-                        <ReviewItem review={review} key={review.id} className={`${index == 2 && 'hidden lg:block' || index == 1 && 'hidden sm:block'}`}/>
-                    ))
+                    reviewSection.map((review : IRatingWithUser, index) => {
+                        return <ReviewItem review={review} key={review.id} className={`${index == 2 && 'hidden lg:block' || index == 1 && 'hidden sm:block'}`}/>
+                    })
                 }
             </div>
         </div>

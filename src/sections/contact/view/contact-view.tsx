@@ -1,5 +1,6 @@
 'use client';
 import { sendContactEmail } from '@/app/actions';
+import { SplashScreen } from '@/components/loading';
 import React, { FormEvent } from 'react';
 
 export default function ContactView() {
@@ -35,6 +36,10 @@ export default function ContactView() {
         } finally {
             setIsLoading(false);
         }
+    }
+
+    if (isLoading) {
+        return <SplashScreen className="h-[80vh]" />;
     }
     return (
         <div className="m-auto 3xl:max-w-[1500px] 2xl:max-w-[1450px] xl:max-w-[90%] lg:max-w-[90%] max-w-[95%] py-10">

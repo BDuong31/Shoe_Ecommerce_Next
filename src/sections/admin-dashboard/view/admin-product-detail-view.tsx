@@ -70,15 +70,17 @@ export default function ProductEditPage({ id }: ProductEditPageProps) {
       setLoading(true);
       try {
         const [productRes, variantsRes, imagesRes, brandsRes, categoriesRes] = await Promise.all([
-          getProductById(id),           // API 1
-          getVariants(id),   // API 2 (Giả định hàm này là getVariantsByProductId)
-          getImages(id, 'product'),                // API 3
-          getBrands(),                  // API 4
-          getCategories()               // API 5
+          getProductById(id),          
+          getVariants(id),  
+          getImages({
+            refId: id,
+            type: 'product'
+          }),              
+          getBrands(),                 
+          getCategories()              
         ]);
 
         if (!productRes || !productRes.data) {
-          showToast('Failed to fetch product data.', 'error');
           notFound();
           return;
         }
@@ -102,7 +104,6 @@ export default function ProductEditPage({ id }: ProductEditPageProps) {
 
       } catch (error) {
         console.error('Error fetching product data:', error);
-        showToast('An error occurred while loading data.', 'error');
         notFound();
       } finally {
         setLoading(false);
@@ -250,7 +251,7 @@ export default function ProductEditPage({ id }: ProductEditPageProps) {
       });
 
       // --- BƯỚC 2: Xử lý Variants (Xóa, Cập nhật, Thêm) ---
-      const variantPromises = [];
+      const variantPromises: Promise<string>[] = [];
       
       // Xóa variants
       if (variantsToDelete.length > 0) {
@@ -283,7 +284,7 @@ export default function ProductEditPage({ id }: ProductEditPageProps) {
       await Promise.all(variantPromises);
 
       // --- BƯỚC 3: Xử lý Images (Xóa, Tải lên) ---
-      const imagePromises = [];
+      const imagePromises: Promise<string>[] = [];
 
       // Xóa ảnh
       if (imagesToDelete.length > 0) {
@@ -420,7 +421,6 @@ export default function ProductEditPage({ id }: ProductEditPageProps) {
                       <div className="form-control"><label className="label"><span className="label-text">Color</span></label><input type="text" name="color" placeholder="e.g., Black" value={variant.color || ''} onChange={(e) => handleVariantChange(index, e)} className="input input-bordered input-sm" /></div>
                       <div className="form-control"><label className="label"><span className="label-text">SKU</span></label><input type="text" name="sku" placeholder="SKU-001" value={variant.sku || ''} onChange={(e) => handleVariantChange(index, e)} className="input input-bordered input-sm" /></div>
                       <div className="form-control"><label className="label"><span className="label-text">Stock Qty</span></label><input type="number" name="quantity" placeholder="0" value={variant.quantity || 0} onChange={(e) => handleVariantChange(index, e)} className="input input-bordered input-sm" /></div>
-                      <div className="form-control"><label className="label"><span className="label-text">Price</span></label><input type="number" name="price" placeholder="0.00" value={variant.price || 0} onChange={(e) => handleVariantChange(index, e)} className="input input-bordered input-sm" /></div>
                     </div>
                   </div>
                 ))}

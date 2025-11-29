@@ -23,11 +23,10 @@ const Header = () => {
     const [category, setCategory] = React.useState<ICategory[]>([]);
     const [isSearchOpen, setIsSearchOpen] = React.useState(false);
     const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
-
+    
     const fetcherCategory = async () => {
         try {
             const response = await getCategories()
-            console.log('Fetched categories:', response);
             setCategory(response.data);
         } catch (error) {
             console.error('Error fetching categories:', error);
@@ -92,7 +91,9 @@ const Header = () => {
                         <Link href={'/cart'} tabIndex={0} role="button" className="btn btn-ghost btn-circle">
                             <div className="indicator">
                             <CartRegular/>
-                            <span className="badge badge-sm indicator-item">{cart?.totalItem}</span>
+                            {cart && cart.totalItem > 0 &&
+                                <span className="badge badge-sm indicator-item">{cart?.totalItem}</span>
+                            }
                             </div>
                         </Link>
                         </div>

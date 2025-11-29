@@ -1,3 +1,6 @@
+import { IImage } from "./image";
+import { IUserProfile } from "./user";
+
 export interface IRating {
     id: string,
     rating: number,
@@ -6,6 +9,11 @@ export interface IRating {
     productId: string,
     createdAt: Date,
     updatedAt: Date,
+}
+
+export interface IRatingWithUser extends IRating {
+    user: IUserProfile,
+    images?: IImage[],
 }
 
 export interface IRatingCreate {

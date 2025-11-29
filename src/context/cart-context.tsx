@@ -77,7 +77,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         setError(null);
         try {
             const response = await getCartItemByCartId(cart.id);
-            console.log('Fetched cart items:', response);
             setCartItem(response.data);
         } catch (err) {
             console.error('Failed to fetch cart items:', err);

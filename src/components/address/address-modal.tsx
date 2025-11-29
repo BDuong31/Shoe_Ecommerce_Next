@@ -9,7 +9,7 @@ type Props = {
   modalId: string;
   address?: IAddress | null; 
   type: 'add' | 'edit';
-  onSubmit?: () => void;
+  onSubmit?: (addressId: string, address: IAddressCreate | IAddressUpdate, type: 'add' | 'edit') => void;
 };
 
 type AddressFormData = {
@@ -77,10 +77,8 @@ export default function AddressModal({ modalId, address, type, onSubmit }: Props
         isDefault: isDefault || false,
       };
       try {
-        const response = await createAddress(newAddress);
-        console.log('Address created successfully:', response);
         if (onSubmit) {
-          onSubmit();
+          onSubmit('', newAddress, 'add');
         }
       } catch (error) {
         console.error('Error creating address:', error);
@@ -95,11 +93,8 @@ export default function AddressModal({ modalId, address, type, onSubmit }: Props
           cityProvince: cityProvince,
           isDefault: isDefault,
         }
-        console.log('Calling updateAddress with id:', id, 'and data:', updatedAddress);
-        const response = await updateAddress(id, updatedAddress);
-        console.log('Address updated successfully:', response);
         if (onSubmit) {
-          onSubmit();
+          onSubmit(id, updatedAddress, 'edit');
         }
       } catch (error) {
         console.error('Error updating address:', error); 

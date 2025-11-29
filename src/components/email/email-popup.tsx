@@ -4,13 +4,14 @@ import DebounceInput from '../input/debounce-input';
 
 type Props = {
   modalId: string;
-  onEmailChange: (newEmail: string) => void;
+  onEmailChange: (newEmail: string, oldEmail: string) => void;
 };
 
 export default function EmailChangeModal({ modalId, onEmailChange }: Props) {
     const [email, setEmail] = React.useState('');
+    const [emailOld, setEmailOld] = React.useState('');
     const handleSubmit = () => {
-        onEmailChange(email);
+        onEmailChange(email, emailOld);
         (document.getElementById(modalId) as HTMLDialogElement)?.close();
     }
   return (
@@ -32,7 +33,20 @@ export default function EmailChangeModal({ modalId, onEmailChange }: Props) {
           <div className="space-y-4">
             <div className="form-control">
               <label className="label">
-                <span className="label-text">New Email</span>
+                <span className="label-text">Email Old</span>
+              </label>
+              <DebounceInput
+                type="email"
+                value={emailOld}
+                placeholder="Enter your old email"
+                className="input input-bordered w-full"
+                onChange={(value: string) => setEmailOld(value)}
+                required
+              />
+            </div>
+            <div className='form-control'>
+              <label className='label'>
+                <span className='label-text'>Email New</span>
               </label>
               <DebounceInput
                 type="email"

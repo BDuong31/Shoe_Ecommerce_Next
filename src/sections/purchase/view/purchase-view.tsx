@@ -10,6 +10,7 @@ import { getPaymentByOrderId, getPayments } from '@/apis/payment';
 import { IProductVariant } from '@/interfaces/variant';
 import { IPayment } from '@/interfaces/payment';
 import { getVariantById } from '@/apis/variant';
+import SplashScreen from '@/components/loading/splash-sceen';
 
 export default function PurchasePage() {
   const [orders, setOrders] = useState<IOrder[] | null>(null);
@@ -20,43 +21,56 @@ export default function PurchasePage() {
   const [activeTab, setActiveTab] = useState('All');
   const tabs = ['All', 'To Pay', 'To Ship', 'To Receive', 'Completed', 'Canceled'];
   const hiddenTabs = ['all', 'Processing', 'Shipped', 'Delivered', 'Completed', 'Canceled'];
+  const [loading, setLoading] = useState(true);
 
   const fetchedOrders = async () => {
+    setLoading(true);
     try {
       const response = await getOrders();
       setOrders(response.data);
     } catch (error) {
       console.error('Error fetching orders:', error);
     }
+    setLoading(false);
   }
 
   const fetchOrderItemsByOrderId = async (id: string) => {
+    setLoading(true);
     try {
       const response = await getOrderItemsByOrderId(id);
       return response.data;
     } catch (error) {
       console.error('Error fetching order items by order ID:', error);
       return null;
+    } finally {
+      setLoading(false);
     }
   }
 
   const fetchVariant = async (id: string) => {
+    setLoading(true);
     try {
       const response = await getVariantById(id);
       return response.data;
     } catch (error) {
       console.error('Error fetching variant by ID:', error);
       return null;
+    } finally {
+      setLoading(false);
     }
   }
 
   const fetchePaymentById = async (id: string) => {
+    setLoading(true);
     try {
       const response = await getPaymentByOrderId(id);
       return response.data;
     } catch (error) {
       console.error('Error fetching payment by order ID:', error);
       return null;
+    }
+    finally {
+      setLoading(false);
     }
   }
 
@@ -121,6 +135,9 @@ export default function PurchasePage() {
     console.log('List of orders after filtering:', listOrder);
   }, [activeTab]);
 
+  if (loading) {
+    return <SplashScreen className="h-[80vh]" />;
+  }
   return (
     <div className="w-full">
       <div className="bg-white shadow-sm mb-6 rounded-2xl">

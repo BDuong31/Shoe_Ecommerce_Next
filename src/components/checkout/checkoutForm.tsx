@@ -49,7 +49,6 @@ const CheckoutForm = ({ onSubmit, onChangeDeliveryOption} : CheckoutFormProps) =
     }
 
     const openEditModal = () => {
-      console.log('Editing address:', editingAddress);
         (document.getElementById('update_address_modal') as HTMLDialogElement)?.showModal();
     };
 
@@ -70,7 +69,6 @@ const CheckoutForm = ({ onSubmit, onChangeDeliveryOption} : CheckoutFormProps) =
     };
 
     const handleDeliveryChange = (option: 'standard' | 'collect') => {
-      console.log('Delivery option selected:', option);
       setFormData((prev) => ({
         ...prev,
         deliveryOption: option,
@@ -89,7 +87,6 @@ const CheckoutForm = ({ onSubmit, onChangeDeliveryOption} : CheckoutFormProps) =
         showToast('Please agree to all terms before proceeding.', 'error');
         return;
       }
-      console.log('Submitting form with data:', formData);
       onSubmit(formData);
     };
     const cardElementOptions = {
@@ -264,11 +261,9 @@ const CheckoutForm = ({ onSubmit, onChangeDeliveryOption} : CheckoutFormProps) =
           handleSelectAddress(address)
         }}
         onAddNew={() => {
-          console.log('Add new address clicked');
           openAddModal();
         }}
         onEditAddress={(address) => {
-          console.log('Edit address clicked');
           setEditingAddress(address);
           openEditModal();
         }}

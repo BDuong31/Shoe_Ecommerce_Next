@@ -39,7 +39,7 @@ export const getProductsByCondition = async (dto: IConditionalProduct): Promise<
 export const createProduct = async (productData: IProductCreate): Promise<string> => {
   try {
     const { data } = await axiosInstance.post(endpoints.product.createProduct, productData);
-    return data;
+    return data.data;
   } catch (error) {
     console.error('Failed to create product:', error);
     throw error;

@@ -4,13 +4,14 @@ import DebounceInput from '../input/debounce-input';
 
 type Props = {
   modalId: string;
-  onPhoneChange: (newPhone: string) => void;
+  onPhoneChange: (oldPhone: string, newPhone: string) => void;
 };
 
 export default function PhoneChangeModal({ modalId, onPhoneChange }: Props) {
-    const [phone, setPhone] = React.useState('')
+    const [oldPhone, setOldPhone] = React.useState('');
+    const [newPhone, setNewPhone] = React.useState('');
     const handleSubmit = () => {
-        onPhoneChange(phone);
+        onPhoneChange(oldPhone, newPhone);
         (document.getElementById(modalId) as HTMLDialogElement)?.close();
     }
   return (
@@ -33,10 +34,23 @@ export default function PhoneChangeModal({ modalId, onPhoneChange }: Props) {
               </label>
               <DebounceInput
                 type="tel"
-                value={phone}
+                value={oldPhone}
+                placeholder="Enter your old phone number"
+                className="input input-bordered w-full"
+                onChange={(value: string) => setOldPhone(value)}
+                required
+              />
+            </div>
+            <div className='form-control'>
+              <label className='label'>
+                <span className='label-text'>New Phone Number</span>
+              </label>
+              <DebounceInput
+                type="tel"
+                value={newPhone}
                 placeholder="Enter your new phone number"
                 className="input input-bordered w-full"
-                onChange={(value: string) => setPhone(value)}
+                onChange={(value: string) => setNewPhone(value)}
                 required
               />
             </div>

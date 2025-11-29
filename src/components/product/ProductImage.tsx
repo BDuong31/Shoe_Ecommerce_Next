@@ -13,7 +13,6 @@ type ProductImageProps = {
 const ProductImage = ({ images }: ProductImageProps) => {
     const [showModal, setShowModal] = React.useState<boolean>(false);
     const [activeIndex, setActiveIndex] = React.useState<number>(0);
-    console.log(images);
 
     const cornerClasses = [
         'rounded-tl-[3rem]',

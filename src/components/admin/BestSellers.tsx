@@ -1,8 +1,6 @@
-// src/components/admin/BestSellers.tsx
 import { MoreHorizontal } from 'lucide-react';
 import Image from 'next/image';
 
-// Dữ liệu mẫu (Giữ nguyên)
 const bestSellers = [
   { id: 1, name: 'Adidas Ultra boost', price: 126.50, sales: 999, img: '/shoes.jpg' },
   { id: 2, name: 'Adidas Ultra boost', price: 126.50, sales: 999, img: '/shoes.jpg' },
@@ -11,13 +9,10 @@ const bestSellers = [
 
 export default function BestSellers() {
   return (
-    // 1. Thêm 'h-full' vào card
     <div className="card bg-base-100 shadow-sm h-full">
 
-      {/* 2. Thêm 'flex flex-col' vào card-body để nó có thể co dãn */}
       <div className="card-body p-4 flex flex-col">
         
-        {/* Header (Giữ nguyên) */}
         <div className="flex justify-between items-center mb-4">
           <h2 className="card-title">Best Sellers</h2>
           <button className="btn btn-ghost btn-circle btn-sm">
@@ -45,8 +40,6 @@ export default function BestSellers() {
           ))}
         </div>
 
-        {/* Nút Report */}
-        {/* 3. Thêm 'mt-auto' để đẩy nút này xuống dưới cùng */}
         <div className="card-actions mt-auto pt-6">
           <button className="btn btn-neutral btn-block">REPORT</button>
         </div>

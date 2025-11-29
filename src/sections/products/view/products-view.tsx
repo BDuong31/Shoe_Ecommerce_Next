@@ -14,85 +14,131 @@ import ReviewModal from '@/components/review/ReviewModal';
 import { IProductDetails } from '@/interfaces/product';
 import { IConditionalImage, IImage, IImageCreate } from '@/interfaces/image';
 import { getProductById, getProducts } from '@/apis/product';
-import { getImages } from '@/apis/image';
+import { getImages, uploadImage } from '@/apis/image';
 import { getWishlistByCond } from '@/apis/wishlist';
 import { useUserProfile } from '@/context/user-context';
+import SplashScreen from '@/components/loading/splash-sceen';
+import { useCart } from '@/context/cart-context';
+import { IRating, IRatingUpdate, IRatingWithUser } from '@/interfaces/rating';
+import { IUserProfile } from '@/interfaces/user';
+import { getListUser } from '@/apis/user';
+import { checkRatingByUserAndProduct, getRatingsById, getRatingsByProductId, updateRating} from '@/apis/rating';
+import { check, set } from 'zod';
+import { useToast } from '@/context/toast-context';
+import { randomInt } from 'node:crypto';
+import { getVariants } from '@/apis/variant';
+import { IProductVariant } from '@/interfaces/variant';
 
 interface ParamsProps {
     id: string
 }
 
-const mockRatingDistribution = [
-    { star: 5, percentage: 70 },
-    { star: 4, percentage: 15 },
-    { star: 3, percentage: 8 },
-    { star: 2, percentage: 5 },
-    { star: 1, percentage: 2 },
+type RatingDistribution = {
+    star: number;
+    percentage: number;
+}[];
+
+const RatingDefault: RatingDistribution = [
+    { star: 5, percentage: 0 },
+    { star: 4, percentage: 0 },
+    { star: 3, percentage: 0 },
+    { star: 2, percentage: 0 },
+    { star: 1, percentage: 0 },
 ];
 export default function Product({id} : ParamsProps) {
     const { userProfile } = useUserProfile();
+    const { showToast } = useToast();
     const [category, setCategory]  = useState("")
     const [relatedProducts, setRelatedProducts] = useState<IProductDetails[]>([]);
-    const [relatedImages, setRelatedImages] = useState<Record<string, IImage[]>>({});
+    const [relatedProductVariants, setRelatedProductVariants] = useState<Record<string, IProductVariant[]>>({});
     const [ProductInfos, setProductInfos] = useState<IProductDetails | null>(null);
     const [images, setImages] = useState<IImage[]>([]);
     const [imagesDefault, setImageDefault] = useState<IImage>()
+    const [ratings, setRatings] = useState<IRatingWithUser[] | null>(null);
+    const [users, setUsers] = useState<IUserProfile[] | null>(null);
+    const [ratingDistribution, setRatingDistribution] = useState<RatingDistribution>(RatingDefault);
+    const [checkedRating, setCheckedRating] = useState<boolean | null>(null);
     const [totalPages, setTotalPages] = useState(0)
     const [itemsPerPage, setItemsPerPage] = useState(2);
     const [currentPage, setCurrentPage] = useState(1);
     const [isModalOpen, setIsModalOpen] = useState(false); 
+    const [loading, setLoading] = useState(false);
 
     const fetchProductDetails = async (productId: string) => {
+        setLoading(true);
         try {
             const response = await getProductById(productId);
-            console.log('Fetched product details:', response);
             setProductInfos(response.data);
             setCategory(response.data.category.name || "");
         } catch (error) {
             console.error('Error fetching product details:', error);
+        } finally {
+            setLoading(false);
         }
     }
 
-    const fetchImages = async (id: string) => {
+    const fetcheVariant = async (productId: string): Promise<IProductVariant[]> => {
+        setLoading(true);
         try {
-            const dto: IConditionalImage = {
-                refId: id,
-                type: 'product',
-            }
-            const response = await getImages(dto);
-            console.log('Fetched images:', response);
-            setImages(response.data);
+            const response = await getVariants(productId);
+            return response.data || [];
         } catch (error) {
-            console.error('Error fetching images:', error);
+            console.error('Error fetching product variants:', error);
+            return [];
+        } finally {
+            setLoading(false);
         }
     }
-
     const fetchRelatedProducts = async () => {
+        setLoading(true);
         try {
             const response = await getProducts()
-            console.log('Fetched related products:', response);
             setRelatedProducts(response.data);
         } catch (error) {
             console.error('Error fetching related products:', error);
+        } finally {
+            setLoading(false);
         }
     }
-    
-    const fetchRelatedImages = async (productIds: string) => {
+
+    const fetcherRating = async (productId: string) => {
+        setLoading(true);
         try {
-            const dto: IConditionalImage = {
-                refId: productIds,
-                type: 'product',
-            }
-            const response = await getImages(dto);
-            console.log('Fetched related images:', response);
-            setRelatedImages(prevImages => ({ ...prevImages, [productIds]: response.data }));
+            const response = await getRatingsByProductId(productId);
+            const ratingFilter = (response.data.filter(rating  => rating.rating > 0)).length > 0 ? response.data.filter(rating  => rating.rating > 0) : null;
+            console.log('Fetched ratings:', ratingFilter);
+            setRatings(ratingFilter);
         } catch (error) {
-            console.error('Error fetching related images:', error);
+            console.error('Error fetching ratings:', error);
+        } finally {
+            setLoading(false);
         }
     }
 
+    const fetcheUserProfiles = async (ids: string[]) => {
+        setLoading(true);
+        try {
+            const response = await getListUser(ids);
+            setUsers(response.data);
+        } catch (error) {
+            console.error('Error fetching user profiles:', error);
+        } finally {
+            setLoading(false);
+        }
+    }
 
-
+    const fetcheCheckedRating = async (productId: string) => {
+        setLoading(true);
+        try {
+            const response = await checkRatingByUserAndProduct(productId);
+            setCheckedRating(response.data);
+        } catch (error) {
+            console.error('Error fetching checked rating:', error);
+            return null;
+        } finally {
+            setLoading(false);
+        }
+    }
     useEffect(() => {
         const calculateItemsPerPage = () => {
             if (typeof window !== 'undefined') {
@@ -114,22 +160,61 @@ export default function Product({id} : ParamsProps) {
 
     useEffect(() => {
         fetchProductDetails(id);
-        fetchImages(id);
-        images.forEach((e) => {
-            if(e.isMain) {
-                return setImageDefault(e);
-            }
-        })
+        fetcheCheckedRating(id);
     }, [id]);
+
+    useEffect(() => {
+        if (ProductInfos) {
+            setImageDefault(ProductInfos.images.find(img => img.isMain));
+        }
+    }, [ProductInfos]);
+
+    useEffect(() => {
+        if (ProductInfos) {
+            console.log('ProductInfos changed, fetching ratings for product ID:', ProductInfos.id);
+            fetcherRating(ProductInfos.id);
+        } else {
+            setRatings(null);
+        }
+    }, [checkedRating, ProductInfos]);
+
+    useEffect(() => {
+        if (ratings && ratings.length > 0) {
+            const userIds = Array.from(new Set(ratings.map(rating => rating.userId)));
+            fetcheUserProfiles(userIds);
+            for (let i = 1; i <= 5; i++) {
+                const count = ratings.filter(rating => rating.rating === i).length;
+                const percentage = (count / ratings.length) * 100;
+                setRatingDistribution(prevDistribution => {
+                    const newDistribution = prevDistribution.map(dist => {
+                        if (dist.star === i) {
+                            return { star: i, percentage: Math.round(percentage) };
+                        }
+                        return dist;
+                    });
+                    return newDistribution;
+                });
+            }
+        }
+    }, [ratings, id]);
 
     useEffect(() => {
         fetchRelatedProducts();
     }, []);
 
     useEffect(() => {
-        relatedProducts.forEach((e) => {
-            fetchRelatedImages(e.id);
-        })
+        if (relatedProducts.length > 0) {
+            const fetchAllVariants = async () => {
+                const variantsData: Record<string, IProductVariant[]> = {};
+                for (const product of relatedProducts) {
+                    const productVariants = await fetcheVariant(product.id);
+                    variantsData[product.id] = productVariants;
+                }
+                setRelatedProductVariants(variantsData);
+            };
+
+            fetchAllVariants();
+        }
     }, [relatedProducts]);
 
     useEffect(() => {
@@ -150,21 +235,82 @@ export default function Product({id} : ParamsProps) {
     }, [relatedProducts, currentPage, itemsPerPage]);
 
     const handleOpenModal = () => {
-        setIsModalOpen(true);
+        if (checkedRating){
+            setIsModalOpen(true);
+        } else {
+            showToast('You can only rate products you’ve purchased, and it looks like you may have already rated this one.', 'warning');
+        }
     }
     const handleCloseModal = () => {
         setIsModalOpen(false);
     }
 
-    const handleReviewSubmit = (reviewData: any) => {
-        console.log("Review submitted:", reviewData);
+    const handleReviewSubmit = async (reviewData: { rating: number, description: string, files: File[] }) => {
         handleCloseModal();
+        setLoading(true);
+        let ratingId: string | undefined = undefined;
+
+        try {
+            const { rating: newRatingValue, description: newComment, files } = reviewData;
+
+            const response = await getRatingsByProductId(id);
+            const existingRatings = response.data;
+            const existingRating = existingRatings.find(rating => rating.userId === userProfile?.id);
+
+            if (existingRating) {
+                ratingId = existingRating.id;
+            } else {
+                showToast('No existing rating found to update', 'error');
+                throw new Error('No existing rating found to update');
+            }
+            const ratingUpdate: IRatingUpdate = {
+                rating: newRatingValue,
+                comment: newComment,
+            }
+
+            const ratingUpdateResponse = await updateRating(ratingId!, ratingUpdate); 
+            if (!ratingUpdateResponse) { 
+                showToast('Failed to update rating', 'error');
+                throw new Error('Failed to update rating');
+            }
+
+            const imagePromises = files.map((file) => {
+                const isCover = file === files[0];
+                const imageDto: IImageCreate = {
+                    isMain: isCover,
+                    refId: ratingId || '',
+                    type: 'rating'
+                };
+                return uploadImage(imageDto, file)
+            });
+
+            await Promise.all(imagePromises);
+
+            if (ProductInfos) {
+                await fetcherRating(ProductInfos.id);
+            }
+
+            showToast('Rating submitted successfully', 'success');
+        } catch (error) {
+            console.error(error);
+            showToast('Failed to submit review', 'error');
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    if (loading) {
+        return <SplashScreen className='h-[80vh]' />;
     }
     return (
         <div className={'m-auto 3xl:max-w-[1500px] 2xl:max-w-[1450px] xl:max-w-[90%] lg:max-w-[90%] max-w-[95%]'}>
             <div className='grid md:grid-cols-2 grid-cols-1 py-10 gap-9'>
-                <ProductImage images={images} />
-                <ProductDetails product={ProductInfos ? ProductInfos : null} />
+                {ProductInfos && (
+                    <>
+                        <ProductImage images={ProductInfos ? ProductInfos.images : []} />
+                        <ProductDetails product={ProductInfos ? ProductInfos : null} />
+                    </>
+                )}
             </div>
             <div>
                 <div className={`pb-5 flex m-auto`}>
@@ -181,7 +327,7 @@ export default function Product({id} : ParamsProps) {
                     </div>
                 </div>
             </div>
-            <ProductListLaster products={paginatedProducts} images={relatedImages} length={4}  /> 
+            <ProductListLaster products={paginatedProducts} variants={relatedProductVariants} length={4}  /> 
 
             <div className='flex gap-2 py-4 justify-center'>
                 {
@@ -192,33 +338,42 @@ export default function Product({id} : ParamsProps) {
             </div>
             <div className='flex flex-col mt-[102px] gap-12'>
                 <h1 className='2xl:text-[74px] xl:text-[74px] lg:text-[60px] md:text-[54px] sm:text-[54px] text-[34px] font-semibold flex-1 text-darkgrey uppercase'>Reviews for {ProductInfos?.productName}</h1>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-1">
-                    <div className="flex flex-col items-center justify-center p-4">
-                        <div className="flex items-center space-x-2 mb-2">
-                            <FaStar fill="#FFC107" size={24} />
-                            <p className="text-xl font-extrabold">4.5</p>
-                            <span className="text-xl font-extrabold">/5</span>
+                {ProductInfos && ProductInfos.averageRating.totalRating > 0 ? (
+                        <>
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-1">
+                                <div className="flex flex-col items-center justify-center p-4">
+                                    <div className="flex items-center space-x-2 mb-2">
+                                        <FaStar fill="#FFC107" size={24} />
+                                        <p className="text-xl font-extrabold">{ProductInfos?.averageRating.avgRating}</p>
+                                        <span className="text-xl font-extrabold">/5</span>
+                                    </div>
+                                    <p className="text-xl font-bold">{ProductInfos?.averageRating.totalRating} RATING</p>
+                                </div>
+                                <div className="lg:col-span-1 space-y-3 p-4">
+                                    {ratingDistribution && ratingDistribution.map((data) => (
+                                        <RatingBar key={data.star} star={data.star} percentage={data.percentage} />
+                                    ))}
+                                </div>
+                            </div>
+                            <ReviewSection productId={id} />
+                            <div className='flex justify-center mt-4 mb-10'>
+                                <Link href={`/rating/${id}`}>
+                                    <button className='btn btn-outline w-[166px] h-[48px]'>SEE ALL</button>
+                                </Link>
+                                <button onClick={handleOpenModal} className='btn btn-primary ml-4 w-[166px] h-[48px]'>WRITE RATING</button>
+                            </div>
+                        </>
+                    ) : (
+                        <div className='flex flex-col items-center justify-center'>
+                            <p className='text-darkgrey text-lg mb-4'>No reviews yet. Be the first to write a review!</p>
+                            <button onClick={handleOpenModal} className='btn btn-primary w-[166px] h-[48px]'>WRITE RATING</button>
                         </div>
-                        <p className="text-xl font-bold">100 RATING</p>
-                    </div>
-                    <div className="lg:col-span-1 space-y-3 p-4">
-                        {mockRatingDistribution.map((data) => (
-                            <RatingBar key={data.star} star={data.star} percentage={data.percentage} />
-                        ))}
-                    </div>
-                </div>
-                <ReviewSection />
-                <div className='flex justify-center mt-4 mb-10'>
-                    <Link href={`/rating/${id}`}>
-                        <button className='btn btn-outline w-[166px] h-[48px]'>SEE ALL</button>
-                    </Link>
-                    <button onClick={handleOpenModal} className='btn btn-primary ml-4 w-[166px] h-[48px]'>WRITE RATING</button>
-                </div>
+                )}
             </div>
             <ReviewModal
                 isOpen={isModalOpen}
                 onClose={handleCloseModal}
-                productImage={imagesDefault?.url || '/baso.png'}
+                productImage={imagesDefault?.url || '/logo.png'}
                 productName={ProductInfos?.productName || ''}
                 onReviewSubmit={handleReviewSubmit}
             />

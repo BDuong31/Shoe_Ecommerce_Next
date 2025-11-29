@@ -2,12 +2,12 @@
 import { getImages } from '@/apis/image';
 import { getProductById } from '@/apis/product';
 import { getWishlists } from '@/apis/wishlist';
+import { SplashScreen } from '@/components/loading';
 import ProductList, { ProductListLaster } from '@/components/product/productList';
 import { useUserProfile } from '@/context/user-context';
-import { IImage } from '@/interfaces/image';
+import { IConditionalImage, IImage } from '@/interfaces/image';
 import { IProduct, IProductDetails } from '@/interfaces/product';
 import { IWishlist, IWishlistCond } from '@/interfaces/wishlist';
-import mockProduct from '@/sections/home/data/product';
 import { fetcher } from '@/utils/axios';
 import { get } from 'http';
 import React, { useState, useRef, useMemo, useEffect } from "react";
@@ -58,7 +58,7 @@ const getPaginationRange = (currentPage: number, totalPages: number) => {
 
     let finalRange = [];
     for (let i = 0; i < range.length; i++) {
-        if(range[i] === '...' && i > 0 && i < range.length - 1 && range[i-1] + 1 === range[i+1]) {
+        if (range[i] === '...' && i > 0 && i < range.length - 1 && typeof range[i - 1] === 'number' && typeof range[i + 1] === 'number' && (range[i - 1] as number) + 1 === (range[i + 1] as number)) {
             continue;
         }
         finalRange.push(range[i]);
@@ -70,10 +70,13 @@ export default function WishlistView() {
     const { userProfile} = useUserProfile()
     const [wishlist, setWishlist] = React.useState<IWishlist[]>();
     const [products, setProducts] = React.useState<IProductDetails[]>([]);
+    const [variantMap, setVariantMap] = React.useState<Record<string, any>>({});
     const [images, setImages] = React.useState<Record<string, IImage[]>>({});
     const [currentPage, setCurrentPage] = React.useState(1);
+    const [loading, setLoading] = React.useState(true);
     
     const fetchWishlist = async () => {
+        setLoading(true);
         try {
             const dto: IWishlistCond = {
                 userId: userProfile?.id || ''
@@ -82,10 +85,30 @@ export default function WishlistView() {
             setWishlist(response.data);
         } catch (error) {
             console.error('Failed to fetch wishlist:', error);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    const fetchVariantsForProducts = async (productIds: string[]) => {
+        try {
+            const variantResponses = await Promise.all(
+                productIds.map(productId =>
+                    fetcher.get(`/product/variants/${productId}`)
+                )
+            );
+            const variantData: Record<string, any> = {};
+            variantResponses.forEach((response, index) => {
+                variantData[productIds[index]] = response.data;
+            });
+            setVariantMap(variantData);
+        } catch (error) {
+            console.error('Failed to fetch variants:', error);
         }
     }
 
     const fetchProducts = async (productIds: string) => {
+        setLoading(true);
         try {
             const response = await getProductById(productIds);
             setProducts(prevProducts => {
@@ -98,15 +121,25 @@ export default function WishlistView() {
             });
         } catch (error) {
             console.error('Failed to fetch products:', error);
+        } finally {
+            setLoading(false);
         }
     }
 
     const fetchImage = async (productId: string) => {
+        setLoading(true);
         try {
-            const response = await getImages(productId);
+            const dto: IConditionalImage = {
+                refId: productId,
+                type: 'product',
+                isMain: true,
+            }
+            const response = await getImages(dto);
             setImages(prevImages => ({ ...prevImages, [productId]: response.data }));
         } catch (error) {
             console.error('Failed to fetch images:', error);
+        } finally {
+            setLoading(false);
         }
     }
 
@@ -126,6 +159,8 @@ export default function WishlistView() {
         products.forEach(product => {
             fetchImage(product.id);
         });
+        const productIds = products.map(product => product.id);
+        fetchVariantsForProducts(productIds);
     }, [products]);
 
     const filteredResults = useMemo(() => {
@@ -158,11 +193,14 @@ export default function WishlistView() {
 
     const pageNumbers = getPaginationRange(currentPage, totalPages);
 
+    if (loading) {
+       return <SplashScreen className="h-[80vh]"/>;
+    }
     return (
         <div className='flex flex-col w-full'>
             <h1 className="text-2xl font-bold mb-4">MY WISHLIST</h1>
             <div className=''>
-                <ProductList products={currentProducts} images={images} length={4} />
+                <ProductList products={currentProducts} variants={variantMap} images={images} length={3} />
                 {totalPages > 1 && (
                     <div className="flex justify-center items-center space-x-2 mt-12">
                         <button 

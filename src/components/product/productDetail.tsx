@@ -1,3 +1,4 @@
+'use client'
 import React, { useEffect, useState } from 'react'
 import { ColorPickerSelected } from '@/components/colorPicker';
 import { useRouter } from 'next/navigation'
@@ -10,10 +11,11 @@ import { IWishlistCreate } from '@/interfaces/wishlist';
 import { useUserProfile } from '@/context/user-context';
 import { createWishlist, deleteWishlist, getWishlistByCond } from '@/apis/wishlist';
 import { Heart } from 'lucide-react';
-import { get } from 'http';
+import axios from 'axios';
 import { createCartItem } from '@/apis/cart';
 import { ICartItemCreate } from '@/interfaces/cart';
 import { useCart } from '@/context/cart-context';
+import { useAuth } from '@/context/auth-context';
 
 type ProductDetailProps = {
     product: IProductDetails | null;
@@ -21,6 +23,7 @@ type ProductDetailProps = {
 
 const ProductDetails = ( {product}: ProductDetailProps) => {
     const { userProfile } = useUserProfile();
+    const { isAuthenticated } = useAuth();
     const { cart, refeshCart, refeshCartItem } = useCart();
     const [colors, setColors] = useState<string[]>([])
     const [sizes, setSizes] = useState<number[]>([])
@@ -39,7 +42,7 @@ const ProductDetails = ( {product}: ProductDetailProps) => {
     
     const fetcherVariant = async () => {
         try {
-            const response = await getVariants(product?.id || "");
+            const response = await getVariants(product?.id ?? '');
             setVariant(response.data);
         } catch (error) {
             console.error('Error fetching variants:', error);
@@ -65,7 +68,7 @@ const ProductDetails = ( {product}: ProductDetailProps) => {
             const response = await createCartItem(dto)
             refeshCart();
             refeshCartItem();
-            console.log('Add to cart response:', response);
+            showToast('Added to cart successfully!', 'success');
         } catch (error) {
             console.error('Error adding to cart:', error);
         }
@@ -106,7 +109,6 @@ const ProductDetails = ( {product}: ProductDetailProps) => {
         );
     };
     const handleSizeChange = (size: number) => {
-        console.log("selected size", size)
         if (selectedSize === size) {
             setSelectedSize(undefined);
         } else {
@@ -139,6 +141,10 @@ const ProductDetails = ( {product}: ProductDetailProps) => {
     );
 
     const handleAddCart = () => {
+        if (!isAuthenticated){
+            showToast('Please log in to add items to your cart.', 'error');
+            return;
+        }
         if (finalSelectedVariant) {
             const dto: ICartItemCreate = {
                 variantId: finalSelectedVariant.id,
@@ -146,10 +152,6 @@ const ProductDetails = ( {product}: ProductDetailProps) => {
                 quantity: 1
             }
             fetcheAddCart(dto);
-            refeshCart();
-            refeshCartItem();
-            showToast('Added to cart!', 'success');
-            console.log('Added variant to cart:', finalSelectedVariant);
         } else {
             showToast('Please select all attributes before adding to cart.', 'error');
         }
@@ -158,7 +160,6 @@ const ProductDetails = ( {product}: ProductDetailProps) => {
     const handleBuy = async () => {
         if (finalSelectedVariant) {
             showToast('Proceeding to buy!', 'success');
-            console.log('Buying variant:', finalSelectedVariant);
         } else {
             showToast('Please select all attributes before buying.', 'error');
         }
@@ -169,11 +170,9 @@ const ProductDetails = ( {product}: ProductDetailProps) => {
             showToast('Removed from wishlist!', 'success');
             try {
                 const response = await getWishlistByCond(userProfile?.id || '', product?.id || '');
-                console.log('Wishlist fetch response:', response);
                 if (response.data.length > 0) {
                     const wishlistId = response.data[0].id;
                     const deleteResponse = await deleteWishlist(wishlistId);
-                    console.log('Wishlist delete response:', deleteResponse);
                     showToast('Removed from wishlist successfully!', 'success');
                     setIsInWishlist(false);
                 } else {
@@ -191,7 +190,6 @@ const ProductDetails = ( {product}: ProductDetailProps) => {
             }
             try {
                 const response = await createWishlist(dto)
-                console.log('Wishlist response:', response);
                 showToast('Added to wishlist successfully!', 'success');
                 setIsInWishlist(true);
             } catch (error) {
@@ -200,9 +198,6 @@ const ProductDetails = ( {product}: ProductDetailProps) => {
             }
         }
     }
-    console.log("product detail", product)
-    console.log("all colors", allColors);
-    console.log("all sizes", allSizes);
   return (
     <div>
         <h1 className='text-3xl font-semibold'>{product?.brand?.name} {product?.productName}</h1>
@@ -214,7 +209,7 @@ const ProductDetails = ( {product}: ProductDetailProps) => {
             <h2 className='text-lg font-semibold'>SIZE</h2>
         <ul className="flex flex-wrap gap-4 py-2">
             {allSizes &&
-                allSizes.map((size) => { // Không cần idx
+                allSizes.map((size) => { 
                     const isAvailable = isSizeAvailable(size);
                     return (
                         <li key={size} className="flex-none"> 

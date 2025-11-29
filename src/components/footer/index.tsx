@@ -1,9 +1,37 @@
+'use client'
+import { getBrands } from '@/apis/brand';
+import { getCategories } from '@/apis/category';
+import { IBrand } from '@/interfaces/brand';
+import { ICategory } from '@/interfaces/category';
 import Image from 'next/image'
 import Link from 'next/link';
-import React from 'react'
+import React, { use } from 'react'
 import { FaFacebook, FaInstagram, FaTwitter, FaTiktok  } from "react-icons/fa";
+import { SplashScreen } from '../loading';
 
 const Footer = () => {
+  const [category, setCategory] = React.useState<ICategory[]>()
+  const [loading, setLoading] = React.useState<boolean>(true)
+
+  const fetchCategories = async () => {
+    setLoading(true);
+    try {
+      const res = await getCategories();
+      setCategory(res.data);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  React.useEffect(() => {
+    fetchCategories();
+  } , [])
+
+  if (loading) {
+    return <SplashScreen />;
+  }
   return (
     <div className={`m-auto pt-32 md:px-0 3xl:max-w-[1500px] 2xl:max-w-[1450px] xl:max-w-[90%] lg:max-w-[90%] max-w-[95%]`}>
         <div className='grid md:grid-cols-2 grid-cols-1 gap-10 bg-blue px-10 pt-10 pb-32 text-white rounded-[40px]'>
@@ -29,12 +57,13 @@ const Footer = () => {
               <div>
                 <h1 className='text-xl text-yellow font-medium py-2'>Categories</h1>
                 <ul className='text-gray'>
-                  <li className='mb-2'>Runners</li>
-                  <li className='mb-2'>Sneakers</li>
-                  <li className='mb-2'>Basketball</li>
-                  <li className='mb-2'>Outdoor</li> 
-                  <li className='mb-2'>Golf</li> 
-                  <li className='mb-2'>Hiking</li> 
+                  {category?.map((cat) => (
+                    <li key={cat.id} className='mb-2'>
+                      <Link href={`/category/${cat.id}`}>
+                        {cat.name}
+                      </Link>
+                    </li>
+                  ))}
                 </ul> 
               </div>
               <div>
@@ -60,10 +89,18 @@ const Footer = () => {
               <div>
                 <h1 className='text-xl text-yellow font-medium py-2'>Follow us</h1>
                 <div className='flex gap-5'>
-                  <FaFacebook size={20} color='#E7E7E3'/>
-                  <FaInstagram size={20} color='#E7E7E3'/>
-                  <FaTwitter size={20} color='#E7E7E3'/>
-                  <FaTiktok size={20} color='#E7E7E3'/>
+                  <Link href={'https://www.facebook.com'}>
+                    <FaFacebook size={20} color='#E7E7E3'/>
+                  </Link>
+                  <Link href={'https://www.instagram.com'}>
+                    <FaInstagram size={20} color='#E7E7E3'/>
+                  </Link>
+                  <Link href={'https://twitter.com'}>
+                    <FaTwitter size={20} color='#E7E7E3'/>
+                  </Link>
+                  <Link href={'https://www.tiktok.com/'}>
+                    <FaTiktok size={20} color='#E7E7E3'/>
+                  </Link>
                 </div>
               </div>
           </div>

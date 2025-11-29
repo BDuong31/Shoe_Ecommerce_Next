@@ -23,7 +23,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="block relative bg-gray h-full w-full">
+      <body className="block relative bg-gray h-full w-full" suppressHydrationWarning={true}>
           <AppProviders>
             {children}
           </AppProviders>

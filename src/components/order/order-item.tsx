@@ -17,7 +17,6 @@ export default function OrderItem({ item, variant }: OrderItemProps) {
 
   const fetchImage = async (productId: string) => {
     try {
-      console.log('Fetching images for productId:', productId);
       const dto: IConditionalImage = {
         refId: productId,
         type: 'product',
@@ -37,7 +36,6 @@ export default function OrderItem({ item, variant }: OrderItemProps) {
 
   React.useEffect(() => {
     if (item && variant) {
-      console.log('Item changed:', item);
       fetchImage(variant.productId);
     }
   }, [item, variant]);

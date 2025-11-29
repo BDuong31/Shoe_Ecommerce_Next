@@ -8,21 +8,24 @@ import PenRegular from "@/components/icons/pen";
 import UserRegula from "@/components/icons/user";
 import VoucherRegular from "@/components/icons/voucher";
 import DebounceInput from "@/components/input/debounce-input";
+import SplashScreen from "@/components/loading/splash-sceen";
 import PhoneChangeModal from "@/components/phone/phone-popup";
+import { useToast } from "@/context/toast-context";
 import { useUserProfile } from "@/context/user-context";
 import { IUserProfile } from "@/interfaces/user";
 import Image from "next/image";
 import React, { use } from "react";
 
 export default function ProfileView() {
-    const { userProfile, setUserProfile} = useUserProfile()
+    const { showToast } = useToast();
+    const { userProfile, setUserProfile, loading } = useUserProfile()
     const [fullName, setFullName] = React.useState<string>(userProfile?.fullName ?? '');
     const [email, setEmail] = React.useState<string>(userProfile?.email ?? '');
     const [phone, setPhone] = React.useState<string>(userProfile?.phone ?? '');
     const [gender, setGender] = React.useState<string>(userProfile?.gender ?? '');
     const [avatarUrl, setAvatarUrl] = React.useState<string>(userProfile?.avatar ?? '/default-avatar.jpg');
     const [avatarFile, setAvatarFile] = React.useState<File | null>(null);
-
+    const [isLoading, setIsLoading] = React.useState(true);
     const hideEmail = (email: string) => {
         const parts = email.split('@');
         if (parts.length !== 2) return email;
@@ -50,6 +53,7 @@ export default function ProfileView() {
     }, [userProfile]);
 
     const updateProfile = async () => {
+        setIsLoading(true);
         const updatedProfiles = {
             fullName,
             email,
@@ -65,18 +69,32 @@ export default function ProfileView() {
             }
         } catch (error) {
             console.error('Failed to update profile:', error);
+        } finally {
+            setIsLoading(false);
         }
     }
-    const handleEmailChange = (newEmail: string) => {
+    const handleEmailChange = (oldEmail: string, newEmail: string) => {
+        if (oldEmail !== email) {
+            showToast("Old email does not match current email.", "error");
+            return;
+        }
         setEmail(newEmail);
-        // updateProfile();
+        updateProfile();
     }
 
-    const handlePhoneChange = (newPhone: string) => {
+    const handlePhoneChange = (oldPhone: string,newPhone: string) => {
+        if ( oldPhone !== phone) {
+            showToast("Old phone number does not match current phone number.", "error");
+            return;
+        }
         setPhone(newPhone);
         updateProfile();
     }
-    console.log(phone);
+
+    if (loading && isLoading) {
+        return <SplashScreen className="h-[80vh]"/>;
+    }
+
     return (
         <>
             <div className="w-full">

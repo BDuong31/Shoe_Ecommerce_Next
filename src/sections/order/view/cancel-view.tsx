@@ -57,9 +57,9 @@ export default function CancelView({ id }: OrderDetailPageProps) {
         </div>
 
         <div className="p-4 rounded-lg mb-6">
-          {items?.map((item, index) => (
-            <OrderItem key={index} item={item} />
-          ))}
+          {/* {items?.map((item, index) => (
+            <OrderItem key={index} item={item} variant={variant} />
+          ))} */}
         </div>
 
         <div className="p-6 rounded-lg mb-6">

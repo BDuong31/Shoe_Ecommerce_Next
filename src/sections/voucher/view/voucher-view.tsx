@@ -7,6 +7,7 @@ import { ICoupon, ICouponCondition } from '@/interfaces/coupon';
 import { createUserCoupon, getUserCoupons } from '@/apis/user';
 import { useUserProfile } from '@/context/user-context';
 import { getCouponByCondition, getCouponById } from '@/apis/coupon';
+import { SplashScreen } from '@/components/loading';
 type Voucher = {
   id: number;
   code: string;
@@ -18,29 +19,6 @@ type Voucher = {
   value: number;
 };
 
-const mockVouchers: Voucher[] = [
-  { 
-    id: 1, code: 'NEWUSER10', title: '10% OFF Welcome Voucher', 
-    details: 'Min. spend $50. Capped at $10.', 
-    expiry: '31-12-2025', status: 'available', type: 'percent', value: 10 
-  },
-  { 
-    id: 2, code: 'FREESHIP', title: '$5 OFF Shipping', 
-    details: 'For all orders over $25.', 
-    expiry: '30-11-2025', status: 'available', type: 'fixed', value: 5 
-  },
-  { 
-    id: 3, code: 'USED123', title: 'Black Friday Sale', 
-    details: '15% OFF everything.', 
-    expiry: '28-11-2025', status: 'used', type: 'percent', value: 15 
-  },
-  { 
-    id: 4, code: 'EXPIRED456', title: 'Old Voucher', 
-    details: '$2 OFF', 
-    expiry: '01-01-2024', status: 'expired', type: 'fixed', value: 2 
-  },
-];
-
 export default function VouchersView() {
   const {userProfile} = useUserProfile();
   const [vouchers, setVouchers] = useState<IUserCoupon[]>([]);
@@ -48,37 +26,48 @@ export default function VouchersView() {
   const [activeTab, setActiveTab] = useState('Available');
   const tabs = ['Available', 'Used', 'Expired'];
   const [newCode, setNewCode] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const { showToast } = useToast();
 
   const fetchVouchers = async () => {
+    setLoading(true);
     try {
       const response = await getUserCoupons();
       setVouchers(response.data);
     } catch (error) {
       console.error('Failed to fetch vouchers:', error);
+    } finally {
+      setLoading(false);
     }
   }
 
   const fetchCoupons = async (couponId: string) => {
+    setLoading(true);
     try {
       const response = await getCouponById(couponId);
       return response.data;
     } catch (error) {
       console.error('Failed to fetch coupons:', error);
+    } finally {
+      setLoading(false);
     }
   }
 
   const fetchCouponsByCondition = async (condition: ICouponCondition) => {
+    setLoading(true);
     try {
       const response = await getCouponByCondition(condition);
       return response.data;
     } catch (error) {
       console.error('Failed to fetch coupons by condition:', error);
+    } finally {
+      setLoading(false);
     }
   }
 
   const fetchCreateUserCoupon = async (couponCode: string) => {
+    setLoading(true);
     try {
       const dto: IUserCouponCreate = {
         userId: userProfile?.id || '',
@@ -88,6 +77,8 @@ export default function VouchersView() {
       return response;
     } catch (error) {
       console.error('Failed to create user coupon:', error);
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -152,6 +143,10 @@ export default function VouchersView() {
     } finally {
       setNewCode('');
     }
+  }
+
+  if (loading) {
+    return <SplashScreen className="h-[80vh]" />;
   }
 
   return (

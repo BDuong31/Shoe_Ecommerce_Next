@@ -9,6 +9,7 @@ import { IOrder } from "@/interfaces/order";
 import { IPayment, IPaymentUpdate } from "@/interfaces/payment";
 import { getPaymentById, updatePayment } from "@/apis/payment";
 import { getOrderById } from "@/apis/order";
+import SplashScreen from "@/components/loading/splash-sceen";
 type PaymentResultViewProps = {
     id: string;
 };
@@ -20,7 +21,7 @@ export default function PaymentResultView({ id }: PaymentResultViewProps) {
     const [payment, setPayment] = React.useState<IPayment | null>(null);
     const [order, setOrder] = React.useState<IOrder | null>(null);
     const [status, setStatus] = React.useState<'success' | 'failed' | 'pending'>('success');
-
+    const [loading, setLoading] = React.useState(true);
     React.useEffect(() => {
         if (resultCode === '0' || return_code === '00' || vnp_ResponseCode === '00') {
             setStatus('success');
@@ -32,6 +33,7 @@ export default function PaymentResultView({ id }: PaymentResultViewProps) {
     }, [resultCode, return_code, vnp_ResponseCode]);
 
     const fetchPayment = async (paymentId: string) => {
+        setLoading(true);
         try {
             const response = await getPaymentById(paymentId);
             if (response) {
@@ -39,10 +41,13 @@ export default function PaymentResultView({ id }: PaymentResultViewProps) {
             }
         } catch (error) {
             console.error('Error fetching payment:', error);
+        } finally {
+            setLoading(false);
         }
     }
 
     const fetchePaymentUpdate = async (paymentId: string, dto: IPaymentUpdate) => {
+        setLoading(true);
         try {
             const response = await updatePayment(paymentId, dto);
             if (response) {
@@ -50,10 +55,13 @@ export default function PaymentResultView({ id }: PaymentResultViewProps) {
             }   
         } catch (error) {
             console.error('Error updating payment:', error);
+        } finally {
+            setLoading(false);
         }
     };
 
     const fetchOrder = async (orderId: string) => {
+        setLoading(true);
         try {
             const response = await getOrderById(orderId);
             if (response) {
@@ -61,6 +69,8 @@ export default function PaymentResultView({ id }: PaymentResultViewProps) {
             }
         } catch (error) {
             console.error('Error fetching order:', error);
+        } finally {
+            setLoading(false);
         }
     }
 
@@ -83,6 +93,10 @@ export default function PaymentResultView({ id }: PaymentResultViewProps) {
             fetchePaymentUpdate(id, { status: 'pending' });
         }
     }, [payment, status]);
+
+    if (loading) {
+        return <SplashScreen className="h-[80vh]"/>;
+    }
 
     if (status === 'failed') {
         return (

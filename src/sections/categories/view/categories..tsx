@@ -7,7 +7,7 @@ import ProductList from "@/components/product/productList"; // Component con
 import Filters from "@/components/filter"; // Component con
 import { GrFormPrevious, GrFormNext } from "react-icons/gr";
 import { IConditionalProduct, IProduct, IProductDetails } from "@/interfaces/product";
-import { IImage } from "@/interfaces/image";
+import { IConditionalImage, IImage } from "@/interfaces/image";
 import { getProductById, getProductsByCondition } from "@/apis/product";
 import { getImages } from "@/apis/image";
 import { ICategory } from "@/interfaces/category";
@@ -15,6 +15,7 @@ import { getCategories, getCategoriesById } from "@/apis/category";
 import { string } from "zod";
 import { getVariantColors, getVariants, getVariantSizes } from "@/apis/variant";
 import { IProductVariant } from "@/interfaces/variant";
+import { SplashScreen } from "@/components/loading";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -81,7 +82,6 @@ interface Slug {
 export default function Categories({ slug }: Slug) {
     const [colorFilters, setColorFilters] = useState([]);
     const [sizeFilters, setSizeFilters] = useState([]);
-    const [categoryFilters, setCategoryFilters] = useState([]);
     const [productList, setProductList] = useState<IProductDetails[]>([]);
     const [products, setProducts] = useState<IProductDetails[]>([]);
     const [variantList, setVariantList] = useState<Record<string, IProductVariant[]>>({});
@@ -94,25 +94,32 @@ export default function Categories({ slug }: Slug) {
     const [FiltersApplied, setFiltersApplied] = useState('NEWEST');
     const [smFilterPopup, setSmFilterPopup] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
+    const [loading, setLoading] = useState(true);
 
     const popupRef = useRef<HTMLDivElement | null>(null);
     const filterRef = useRef<HTMLDivElement | null>(null);
 
     const fetcherColors = async () => {
+        setLoading(true);
         try {
             const response = await getVariantColors();
             setColors(response.data);    
         } catch (error) {
             console.error('Error fetching colors:', error);
+        } finally {
+            setLoading(false);
         }
     }
 
     const fetcherSizes = async () => {
+        setLoading(true);
         try {
             const response = await getVariantSizes();
             setSizes(response.data);    
         } catch (error) {
             console.error('Error fetching sizes:', error);
+        } finally {
+            setLoading(false);
         }
     }
 
@@ -122,6 +129,7 @@ export default function Categories({ slug }: Slug) {
     }, []);
 
     const fetechProducts = async (id: string) => {
+        setLoading(true);
         try {
             const dto: IConditionalProduct = {
                 categoryId: slug,
@@ -131,24 +139,20 @@ export default function Categories({ slug }: Slug) {
             setProductList(response.data);
         } catch (error) {
             console.error("Error fetching product:", error);
+        } finally {
+            setLoading(false);
         }
     };
 
     const fetcherVariants = async (productId: string) => {
+        setLoading(true);
         try {
             const response = await getVariants(productId);
             setVariantList(prevVariants => ({ ...prevVariants, [productId]: response.data }));
         } catch (error) {
             console.error('Error fetching product variants:', error);
-        }
-    }
-
-    const fetchImages = async (id: string) => {
-        try {
-            const response = await getImages(id);
-            setImages(prevImages => ({ ...prevImages, [id]: response.data }));
-        } catch (error) {
-            console.error('Error fetching images:', error);
+        } finally {
+            setLoading(false);
         }
     }
 
@@ -158,7 +162,6 @@ export default function Categories({ slug }: Slug) {
     
     useEffect(() => {
         products.forEach(product => {
-            fetchImages(product.id);
             fetcherVariants(product.id);
         });
     }, [products]);
@@ -182,7 +185,7 @@ export default function Categories({ slug }: Slug) {
                     return b.price - a.price;
                 case 'NEWEST':
                 default:
-                    return b.id - a.id; 
+                    return b.id.localeCompare(a.id);
             }
         });
 
@@ -226,6 +229,10 @@ export default function Categories({ slug }: Slug) {
         setFiltersApplied(sortType);
         setFilterPopup(false);
     };
+
+    if (loading) {
+        return <SplashScreen className="h-[80vh]"/>;
+    }
 
     return (
         <div className="m-auto 3xl:max-w-[1500px] 2xl:max-w-[1450px] xl:max-w-[90%] lg:max-w-[90%] max-w-[95%] py-10"> 
@@ -350,7 +357,7 @@ export default function Categories({ slug }: Slug) {
                 
                 <div className='col-span-3 lg:mt-4'>
                     {currentProducts.length > 0 ? (
-                        <ProductList products={currentProducts} images={images} />
+                        <ProductList products={currentProducts} variants={variantList} />
                     ): (
                         <p className='text-center text-gray-500'>No products found.</p>
                     )}  
@@ -373,7 +380,7 @@ export default function Categories({ slug }: Slug) {
                                         <span className="px-3 py-2 text-gray-700">...</span>
                                     ) : (
                                         <button
-                                            onClick={() => goToPage(item)}
+                                            onClick={() => goToPage(item as number)}
                                             className={`px-4 py-2 rounded-xl font-semibold transition border ${
                                                 currentPage === item 
                                                     ? 'bg-black text-white border-black bg-neutral-950' // Trang hiện tại: nền đen

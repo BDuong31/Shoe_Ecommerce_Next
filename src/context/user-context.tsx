@@ -32,7 +32,6 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     try {
       const res = await getUserProfile();
-      console.log(res);
       setUserProfile(res.data);
       setError(null);
     } catch (err) {

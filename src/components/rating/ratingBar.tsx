@@ -1,10 +1,10 @@
 // src/components/RatingBar.tsx
 
 import React from 'react';
-import { FaStar } from 'react-icons/fa'; // Giả sử bạn đã cài đặt react-icons
+import { FaStar } from 'react-icons/fa'; 
 
 interface RatingBarProps {
-  star: number; // Giá trị rating (ví dụ: 1, 2, 3, 4, 5)
+  star: number;
   percentage: number; // Phần trăm của rating này (0-100)
 }
 

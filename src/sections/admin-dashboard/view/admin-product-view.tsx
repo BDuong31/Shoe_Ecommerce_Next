@@ -10,7 +10,7 @@ import ProductCard from '@/components/product/productCard';
 import React, { useState, useMemo } from 'react'; // Import hooks
 import { GrFormPrevious, GrFormNext } from "react-icons/gr"; // Import icons
 import { IProduct, IProductDetails } from '@/interfaces/product';
-import { IImage, IImageCreate } from '@/interfaces/image';
+import { IConditionalImage, IImage, IImageCreate } from '@/interfaces/image';
 import { IProductVariant } from '@/interfaces/variant';
 import { getProducts } from '@/apis/product';
 import { getImages } from '@/apis/image';
@@ -96,8 +96,12 @@ export default function ProductsPage() {
     try {
       const allImages: IImage[] = [];
       for (const product of productList) {
-        const response = await getImages(product.id, 'product', true);
-        console.log(`Fetched images for product ${product.id}:`, response);
+        const dto: IConditionalImage = {
+          refId: product.id,
+          type: 'product',
+          isMain: true,
+        };
+        const response = await getImages(dto);
         if (response) {
           allImages.push(...response.data);
         }
