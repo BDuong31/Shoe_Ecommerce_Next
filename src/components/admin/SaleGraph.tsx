@@ -1,4 +1,3 @@
-// src/components/admin/SaleGraph.tsx
 
 "use client"; 
 
@@ -21,7 +20,6 @@ export default function SaleGraph() {
 
       <div className="card-body flex flex-col h-full">
         
-        {/* Header của Card (Giữ nguyên) */}
         <div className="flex justify-between items-center mb-4">
           <h2 className="card-title">Sale Graph</h2>
           <div className="flex gap-2">
@@ -31,9 +29,6 @@ export default function SaleGraph() {
           </div>
         </div>
 
-        {/* 3. Chỉnh sửa phần biểu đồ */}
-        {/* Thêm 'flex-1' để nó lấp đầy không gian còn lại */}
-        {/* Bỏ 'height: 300' cố định */}
         <div className="flex-1" style={{ width: '100%' }}> 
           <ResponsiveContainer>
             <LineChart data={data} margin={{ top: 5, right: 20, bottom: 5, left: -20 }}>

@@ -24,8 +24,8 @@ export default function AboutView() {
     const currentMember = menbers[currentIndex];
     const prevIndex = (currentIndex - 1 + menbers.length) % menbers.length;
     const nextIndex = (currentIndex + 1) % menbers.length;
-    const prevMemberRole = menbers[prevIndex].role;
-    const nextMemberRole = menbers[nextIndex].role;
+    const prevMemberRole = menbers[prevIndex].name;
+    const nextMemberRole = menbers[nextIndex].name;
     return (
         <div className="m-auto 3xl:max-w-[1500px] 2xl:max-w-[1450px] xl:max-w-[90%] lg:max-w-[90%] max-w-[95%] py-10">
             <div className="flex flex-row max-h-[60vh] gap-3 p-3">
@@ -37,13 +37,9 @@ export default function AboutView() {
 
                 <div className="w-full h-auto flex flex-col gap-[10px]">
                     <p className="h-[50%] leading-relaxed p-12">
-                        Founded in 1991, Well Shoes has been a leading manufacturer in the footwear industry for over three
-                        decades. Our commitment to quality and innovation drives us to craft exceptional shoes that blend
-                        comfort with style. At Well Shoes, we take pride in our meticulous craftsmanship and dedication to
-                        creating footwear that meets the highest standards. With a rich history and a passion for excellence, we
-                        continue to set the benchmark for quality in every pair we produce.
+                        This e-commerce platform has been developed as part of a student group project for our course on digital business and e-commerce. The objective of this project is to explore and apply the key concepts of online retail, user experience design, and digital marketing strategies. Our team has worked together to create a user-friendly, functional website that demonstrates our understanding of e-commerce systems and the technical aspects of building an online store. The platform features a variety of products and incorporates payment gateways, customer support systems, and inventory management tools, providing a comprehensive solution for online business operations. This project not only showcases our skills in web development but also reflects our ability to collaborate and implement real-world business solutions.
                     </p>
-                    <img className="w-full h-[50%] p-12 rounded-lg object-cover" src="https://placehold.co/600x400/a9a28a/333333?text=Our+Story" alt="Our Story" />
+                    <img className="w-full h-[50%] p-12 rounded-[3.5rem] object-cover" src="https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExanp5aGdwdGRweWpuOGJwMnRheXNpdjJ6dmoxZnE2dDdpYno0cmM4bSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/26tn33aiTi1jkl6H6/giphy.gif" alt="Our Story" />  
                 </div>
             </div>
             <div className="w-full mt-12">
