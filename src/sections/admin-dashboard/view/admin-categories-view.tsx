@@ -6,6 +6,7 @@ import { GrFormPrevious, GrFormNext } from "react-icons/gr";
 import { ICategoryCreate, ICategoryUpdate, ICategory } from '@/interfaces/category';
 import { createCategory, deleteCategory, getCategories, updateCategory } from '@/apis/category';
 import { useToast } from '@/context/toast-context';
+import { SplashScreen } from '@/components/loading';
 
 const ITEMS_PER_PAGE = 7;
 const getPaginationRange = (currentPage, totalPages) => {
@@ -26,7 +27,6 @@ const getPaginationRange = (currentPage, totalPages) => {
   return finalRange;
 };
 
-// --- COMPONENT TRANG CHÍNH ---
 export default function CategoriesView() {
   const [categoriesList, setCategoriesList] = useState<ICategory[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -37,6 +37,8 @@ export default function CategoriesView() {
   const [editingCategory, setEditingCategory] = useState<ICategory>();
 
   const [categoryToDelete, setCategoryToDelete] = useState<ICategory>();
+
+  const [loading, setLoading] = useState(true);
 
   const { showToast } = useToast();
 
@@ -52,7 +54,8 @@ export default function CategoriesView() {
   }
 
   React.useEffect(() => {
-    fechterCategories();
+    setLoading(true);
+    fechterCategories().finally(() => setLoading(false));
   }, []);
 
   const handleCreate = async () => {
@@ -66,10 +69,12 @@ export default function CategoriesView() {
     };
 
     try {
+      setLoading(true);
       const response = await createCategory(data);
       if (response && response.data) {
         setCategoriesList(prevList => [...prevList, response.data]);
         showToast(`Đã tạo category "${data.name}"!`, "success");
+        fechterCategories().finally(() => setLoading(false));
       }
     } catch (error) {
       console.error("Error creating category:", error);
@@ -101,10 +106,12 @@ export default function CategoriesView() {
     };
 
     try {
-      const responese = await updateCategory(editingCategory.id, data);
+      setLoading(true);
+      const response = await updateCategory(editingCategory.id, data);
       if (response && response.data) {
         showToast(`Đã cập nhật category "${data.name}"!`, "success");
         setCategoriesList(prevList => prevList.map(c => c.id === editingCategory.id ? response.data! : c));
+        fechterCategories().finally(() => setLoading(false));
       }
     } catch (error) {
       console.error("Error updating category:", error);
@@ -138,9 +145,13 @@ export default function CategoriesView() {
   };
 
   const filteredCategories = useMemo(() => {
-    return categoriesList?.filter(category => 
-      category.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const lowerCaseSearchTerm = searchTerm?.toLowerCase() ?? '';
+    return categoriesList
+      ?.filter(category => {
+        const categoryName = category?.name ?? ''; 
+        
+        return categoryName.toLowerCase().includes(lowerCaseSearchTerm);
+      });
   }, [searchTerm, categoriesList]);
 
   const totalPages = useMemo(() => {
@@ -170,6 +181,9 @@ export default function CategoriesView() {
     });
   };
 
+  if (loading) {
+    return <SplashScreen className='h-[100vh]'/>
+  }
 
   return (
     <div className="flex flex-col gap-6 p-6 max-h-[90vh] overflow-y-auto scrollbar-hide">

@@ -19,9 +19,19 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
       {
-        protocol: 'http',
+        protocol: 'https',
         hostname: 'admin.localhost',
-        port: '3001',
+        port: '3000',
+        pathname: '/**',
+      },
+            {
+        protocol: 'https',
+        hostname: 'baso.id.vn',
+        pathname: '/**',
+      },
+      {
+        protocol: 'http',
+        hostname: 'admin.baso.id.vn',
         pathname: '/**',
       },
       {

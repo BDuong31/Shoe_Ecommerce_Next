@@ -92,7 +92,7 @@ export default function ProductCreateView() {
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (files.length + acceptedFiles.length > MAX_IMAGES) {
-      showToast(`Giới hạn tối đa là ${MAX_IMAGES} ảnh.`, 'warning');
+      showToast(`Maximum limit is ${MAX_IMAGES} images.`, 'warning'); 
       return;
     }
 

@@ -126,7 +126,7 @@ export default function ProductEditPage({ id }: ProductEditPageProps) {
     const updatedVariants = [...variants];
     const variant = updatedVariants[index];
 
-    if (name === 'quantity' || name === 'price') {
+    if (name === 'quantity' || name === 'price' || name === 'size') {
       updatedVariants[index] = { ...variant, [name]: parseFloat(value) || 0 };
     } else {
       updatedVariants[index] = { ...variant, [name]: value };
@@ -135,7 +135,6 @@ export default function ProductEditPage({ id }: ProductEditPageProps) {
   };
 
   const addVariant = () => {
-    // Thêm variant mới, đánh dấu là _isNew
     setVariants([...variants, { id: `new_${Date.now()}`, size: '', color: '', sku: '', quantity: 0, price: 0, productId: id, _isNew: true } as any]);
   };
 

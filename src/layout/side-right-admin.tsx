@@ -42,11 +42,10 @@ export default function SideRightAdmin() {
   return (
     <aside className="min-h-screen bg-white border-gray flex flex-col" style={{width: '20rem', borderRightWidth: '1px'}}>
       
-      {/* 1. Logo */}
       <div className="h-20 flex items-center justify-center">
         <Link href="/">
             <Image 
-              src="http://localhost:3000/basoblack.png"
+              src="https://baso.id.vn/basoblack.png"
               alt="Admin Logo"
               width={128}
               height={32}
@@ -183,7 +182,7 @@ export default function SideRightAdmin() {
             </Link>
           </li>
 
-          <li>
+          {/* <li>
             <Link 
               href="/nfts"
               className={`
@@ -196,7 +195,7 @@ export default function SideRightAdmin() {
                 ${pathname === '/nfts' ? 'stroke-white' : 'stroke-[#1F1F1F]'}`} />
               NFTs LIST
             </Link>
-          </li>
+          </li> */}
         </ul>
       </nav>
       

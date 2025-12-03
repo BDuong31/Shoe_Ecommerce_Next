@@ -5,9 +5,8 @@
 import { Plus } from 'lucide-react';
 import Link from 'next/link';
 import ProductCard from '@/components/product/productCard';
-// Bỏ import Pagination component cũ
 
-import React, { useState, useMemo } from 'react'; // Import hooks
+import React, { useState, useMemo, useEffect } from 'react'; // Import hooks
 import { GrFormPrevious, GrFormNext } from "react-icons/gr"; // Import icons
 import { IProduct, IProductDetails } from '@/interfaces/product';
 import { IConditionalImage, IImage, IImageCreate } from '@/interfaces/image';
@@ -15,6 +14,7 @@ import { IProductVariant } from '@/interfaces/variant';
 import { getProducts } from '@/apis/product';
 import { getImages } from '@/apis/image';
 import { getVariants } from '@/apis/variant';
+import SplashScreen from '@/components/loading/splash-sceen';
 
 type products = {
   id: string;
@@ -26,9 +26,8 @@ type products = {
   img: string;
 }
 
-// --- LOGIC PHÂN TRANG (Lấy từ code của bạn) ---
 
-const ITEMS_PER_PAGE = 9; // Hiển thị 9 sản phẩm mỗi trang
+const ITEMS_PER_PAGE = 9;
 
 const getPaginationRange = (currentPage, totalPages) => {
     const range = [];
@@ -72,16 +71,13 @@ const getPaginationRange = (currentPage, totalPages) => {
 
 export default function ProductsPage() {
   const [productList, setProductList] = useState<IProductDetails[]>([]);
-  const [imageList, setImageList] = useState<IImage[]>([]);
   const [variantList, setVariantList] = useState<IProductVariant[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(true);
 
-  // API lấy sản phẩm
   const fetcherProducts = async () => {
-    console.log('Fetching products...');
     try {
       const response = await getProducts();
-      console.log('Fetched products:', response);
       if (response) {
         setProductList(response.data);
       }
@@ -90,36 +86,12 @@ export default function ProductsPage() {
     }
   }
 
-  // API lấy hình ảnh
-  const fetcherImages = async () => {
-    console.log('Fetching images for products...');
-    try {
-      const allImages: IImage[] = [];
-      for (const product of productList) {
-        const dto: IConditionalImage = {
-          refId: product.id,
-          type: 'product',
-          isMain: true,
-        };
-        const response = await getImages(dto);
-        if (response) {
-          allImages.push(...response.data);
-        }
-      }
-      setImageList(allImages);
-    } catch (error) {
-      console.error('Failed to fetch images:', error);
-    }
-  }
 
-  // API lấy variant
   const fetcherVariants = async () => {
-    console.log('Fetching variants for products...');
     try {
       const allVariants: IProductVariant[] = [];
       for (const product of productList) {
         const response = await getVariants(product.id);
-        console.log(`Fetched variants for product ${product.id}:`, response);
         if (response) {
           allVariants.push(...response.data);
         }
@@ -131,22 +103,14 @@ export default function ProductsPage() {
   }
 
   React.useEffect(() => {
+    setLoading(true);
     fetcherProducts();
   }, []);
   React.useEffect(() => {
-    if (productList.length > 0) {
-      fetcherImages();
-      fetcherVariants();
-    }
+    fetcherVariants()
   }, [productList]);
-
-  // Gộp dữ liệu sản phẩm với hình ảnh và variant
   const mergedProducts = useMemo(() => {
     return productList.map(product => {
-      console.log('Merging data for product:', product);
-      console.log('Current imageList:', imageList);
-      console.log('Current variantList:', variantList);
-      const images = imageList.filter(img => img.refId === product.id);
       const variants = variantList.filter(variant => variant.productId === product.id);
       const data: products = {
         id: product.id,
@@ -155,29 +119,27 @@ export default function ProductsPage() {
         price: product.price,
         sales: 1000,
         remaining: variants.reduce((sum, v) => sum + v.quantity, 0),
-        img: images[0]?.url || '',
+        img: product.images.find(img => img.isMain)?.url || '',
       };
-      console.log('Merged product data:', data);
       return data;
     });
-  }, [productList, imageList, variantList]);
+  }, [productList, variantList]);
 
-  console.log('Merged Products:', mergedProducts);
-
-  // --- Tính toán phân trang ---
+  useEffect(() => {
+    if (mergedProducts.length > 0) {
+      setLoading(false);
+    }
+  }, [mergedProducts]);
   const totalPages = useMemo(() => {
-    // Sau này bạn sẽ dùng productList.length từ state
     return Math.ceil(mergedProducts.length / ITEMS_PER_PAGE);
-  }, [mergedProducts]); // Chỉ tính 1 lần
+  }, [mergedProducts]);
 
   const currentProducts = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     const endIndex = startIndex + ITEMS_PER_PAGE;
-    // Sau này bạn sẽ slice productList từ state
     return mergedProducts.slice(startIndex, endIndex);
-  }, [currentPage, mergedProducts]); // Tính lại khi trang thay đổi
+  }, [currentPage, mergedProducts]);
 
-  // Các hàm xử lý
   const goToPrevPage = () => {
       setCurrentPage(prev => Math.max(1, prev - 1));
   };
@@ -191,8 +153,10 @@ export default function ProductsPage() {
   };
   
   const pageNumbers = getPaginationRange(currentPage, totalPages);
-  // -------------------------
 
+  if (loading) {
+      return <SplashScreen className='h-[100vh]'/>
+  }
   return (
     <div className="flex flex-col gap-6 p-6 max-h-[90vh] overflow-y-auto scrollbar-hide">
       

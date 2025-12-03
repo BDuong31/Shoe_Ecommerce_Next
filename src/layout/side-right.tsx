@@ -51,9 +51,9 @@ export default function SideRight() {
             <li className={pathname === "/user/vouchers" ? "text-blue" : ""}>
                 <a href="/user/vouchers" className="font-bold px-0"><VoucherRegular width={24} height={24} className={`${pathname === "/user/vouchers" ? "text-blue" : "text-darkgrey"}`} /> My Vouchers</a>
             </li>
-            <li className={pathname === "/user/nft" ? "text-blue" : ""}>
+            {/* <li className={pathname === "/user/nft" ? "text-blue" : ""}>
                 <a href="/user/nft" className="font-bold px-0"><Wallet width={24} height={24} className={`${pathname === "/user/nfts" ? "text-blue" : "text-darkgrey"}`} /> My NFTs</a>
-            </li>
+            </li> */}
             </ul>
         </aside>
     )

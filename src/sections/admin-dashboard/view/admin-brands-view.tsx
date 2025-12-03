@@ -1,39 +1,17 @@
-// src/app/admin/(main)/categories/page.tsx
 
 "use client"; 
 
 import { createBrand, deleteBrand, getBrands, updateBrand } from '@/apis/brand';
+import { SplashScreen } from '@/components/loading';
 import { useToast } from '@/context/toast-context';
 import { IBrand } from '@/interfaces/brand';
 import { create } from 'domain';
 import { Plus, Search, Edit, Trash2 } from 'lucide-react';
 import React, { useState, useMemo } from 'react'; 
 import { GrFormPrevious, GrFormNext } from "react-icons/gr"; 
+import { set } from 'zod';
 
-// --- ĐỊNH NGHĨA KIỂU DỮ LIỆU (Dựa trên CSDL) ---
-interface Brand {
-  id: string; // cuid
-  name: string;
-  createdAt: string; // DateTime (dùng string ISO)
-  updatedAt: string; // DateTime
-}
 
-// --- Dữ liệu mẫu (Giả lập theo CSDL) ---
-const mockBrands: Category[] = [
-  { id: 'cuid1', name: 'Nike', createdAt: '2025-01-01T00:00:00Z', updatedAt: '2025-01-01T00:00:00Z' },
-  { id: 'cuid2', name: 'Adidas', createdAt: '2025-01-02T00:00:00Z', updatedAt: '2025-01-02T00:00:00Z' },
-  { id: 'cuid3', name: 'Puma', createdAt: '2025-01-03T00:00:00Z', updatedAt: '2025-01-03T00:00:00Z' },
-  { id: 'cuid4', name: 'Reebok', createdAt: '2025-01-04T00:00:00Z', updatedAt: '2025-01-04T00:00:00Z' },
-  // Thêm data để test phân trang
-  ...Array.from({ length: 15 }, (_, i) => ({
-    id: `cuid${i + 5}`,
-    name: `Category ${i + 5}`,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  }))
-];
-
-// --- LOGIC PHÂN TRANG (Giữ nguyên) ---
 const ITEMS_PER_PAGE = 7;
 const getPaginationRange = (currentPage, totalPages) => {
   const range = [];
@@ -65,6 +43,8 @@ export default function BrandsView() {
 
   const [brandToDelete, setBrandToDelete] = useState<IBrand | null>(null);
 
+  const [loading, setLoading] = useState(true);
+
   const { showToast } = useToast();
   const fetcherBrands = async () => {
     try {
@@ -78,7 +58,8 @@ export default function BrandsView() {
   }
 
   React.useEffect(() => {
-    fetcherBrands();
+    setLoading(true);
+    fetcherBrands().finally(() => setLoading(false));
   }, []);
 
   const handleCreate = async () => {
@@ -90,10 +71,11 @@ export default function BrandsView() {
       name: newBrandName,
     };
     try {
+      setLoading(true);
       const response = await createBrand(dataToSave);
       if (response && response.data) {
         showToast("Đã tạo brand mới!", "success");
-        fetcherBrands();
+        fetcherBrands().finally(() => setLoading(false));
       }
     } catch (error) {
       console.error("Error creating brand:", error);
@@ -123,10 +105,11 @@ export default function BrandsView() {
       ...editingBrand,
     };
     try {
+      setLoading(true);
       const response = await updateBrand(editingBrand.id, dataToUpdate);
       if (response && response.data) {
         showToast("Đã cập nhật brand!", "success");
-        fetcherBrands();
+        fetcherBrands().finally(() => setLoading(false));
       }
     } catch (error) {
       console.error("Error updating brand:", error);
@@ -192,7 +175,9 @@ export default function BrandsView() {
   };
 
 
-  // --- JSX ---
+  if (loading) {
+    return <SplashScreen className='h-[100vh]'/>;
+  }
   return (
     <div className="flex flex-col gap-6 p-6 max-h-[90vh] overflow-y-auto scrollbar-hide">
       

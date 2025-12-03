@@ -6,6 +6,7 @@ import { getListOrders, getOrderItemsByOrderId, getOrders } from '@/apis/order';
 import { getPaymentById, getPayments } from '@/apis/payment';
 import { getListUserByIdx, getUserProfile } from '@/apis/user';
 import { getVariantById } from '@/apis/variant';
+import SplashScreen from '@/components/loading/splash-sceen';
 import { IOrder, IOrderItem } from '@/interfaces/order';
 import { IOrder } from '@/interfaces/order';
 import { IPayment } from '@/interfaces/payment';
@@ -14,28 +15,8 @@ import { IProductVariant } from '@/interfaces/variant';
 import { Calendar, ChevronDown, MoreHorizontal } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import React, { useState, useMemo } from 'react'; // Import hooks
+import React, { useState, useMemo, useEffect, use } from 'react'; // Import hooks
 import { GrFormPrevious, GrFormNext } from "react-icons/gr"; // Import icons
-
-// --- Dữ liệu mẫu (Giả lập 30 đơn hàng) ---
-const mockOrders = [
-  { id: 1, product: 'Adidas Ultra boost', orderId: '#25421', date: 'Jan 8th,2022', payment: 'PayPal', customer: { name: 'Bessie Cooper', img: '/baso.jpg' }, status: 'Delivered', amount: 200.00 },
-  { id: 2, product: 'Adidas Ultra boost', orderId: '#25421', date: 'Jan 8th,2022', payment: 'Pioneer', customer: { name: 'Bessie Cooper', img: '/baso.jpg' }, status: 'Canceled', amount: 200.00 },
-  { id: 3, product: 'Adidas Ultra boost', orderId: '#25421', date: 'Jan 8th,2022', payment: 'Cash', customer: { name: 'Bessie Cooper', img: '/baso.jpg' }, status: 'Delivered', amount: 200.00 },
-  { id: 4, product: 'Adidas Ultra boost', orderId: '#25421', date: 'Jan 8th,2022', payment: 'PayPal', customer: { name: 'Bessie Cooper', img: '/baso.jpg' }, status: 'Canceled', amount: 200.00 },
-  { id: 5, product: 'Adidas Ultra boost', orderId: '#25421', date: 'Jan 8th,2022', payment: 'Cash', customer: { name: 'Bessie Cooper', img: '/baso.jpg' }, status: 'Delivered', amount: 200.00 },
-  { id: 6, product: 'Adidas Ultra boost', orderId: '#25421', date: 'Jan 8th,2022', payment: 'Pioneer', customer: { name: 'Bessie Cooper', img: '/baso.jpg' }, status: 'Canceled', amount: 200.00 },
-  ...Array.from({ length: 24 }, (_, i) => ({
-    id: i + 7,
-    product: 'Sample Product',
-    orderId: `#254${i + 22}`,
-    date: `Jan ${i + 1}th, 2022`,
-    payment: 'PayPal',
-    customer: { name: 'John Doe', img: '/baso.jpg' },
-    status: i % 2 === 0 ? 'Delivered' : 'Canceled',
-    amount: 150.00 + i,
-  }))
-];
 
 // --- Component nhỏ cho Status Badge ---
 function StatusBadge({ status }: { status: string }) {
@@ -89,6 +70,7 @@ export default function OrdersView() {
   const [currentPage, setCurrentPage] = useState(1);
   const [filterStatus, setFilterStatus] = useState('all');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const fetchUserProfile = async (idx: string[]) => {
     try {
@@ -173,7 +155,6 @@ export default function OrdersView() {
       setIsDropdownOpen(!isDropdownOpen);
   };
 
-  // --- Lọc đơn hàng theo trạng thái ---
 
   const filteredOrders = useMemo(() => {
     if (filterStatus === 'all') return orderList;
@@ -197,7 +178,13 @@ export default function OrdersView() {
   const goToPage = (page) => { if (page >= 1 && page <= totalPages) setCurrentPage(page); };
   
   const pageNumbers = getPaginationRange(currentPage, totalPages);
-  // -------------------------
+
+  useEffect(() => {
+    if (currentOrders.length > 0 && variantMap) setLoading(false);
+  }, [currentOrders]);
+  if (loading) {
+      return <SplashScreen className='h-[100vh]'/>
+  }
 
   return (
     <div className="flex flex-col gap-6 p-6  max-h-[90vh]">

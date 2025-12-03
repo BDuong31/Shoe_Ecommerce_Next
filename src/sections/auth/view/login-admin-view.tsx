@@ -82,8 +82,8 @@ export default function LoginAdminView() {
     }
     return (
         <div className="h-[100vh] flex flex-row justify-center items-center">
-            <div className="w-[50%] h-[100vh]" style={{backgroundImage: 'url(http://localhost:3001/bgadmin.png)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat'}}>
-                <Image src="/footerlogo.png" alt="Logo" width={150} height={50} className="mx-auto mt-10"/>
+            <div className="w-[50%] h-[100vh]" style={{backgroundImage: 'url(https://baso.id.vn/bgadmin.png)', backgroundSize: 'cover', backgroundPosition: 'center', backgroundRepeat: 'no-repeat'}}>
+                <Image src="https://baso.id.vn/footerlogo.png" alt="Logo" width={150} height={50} className="mx-auto mt-10"/>
             </div>
             <div className="w-[35%] mx-auto rounded-lg">
                 <h1 className="text-2xl font-bold mb-4">Login</h1>
@@ -117,10 +117,6 @@ export default function LoginAdminView() {
                         {passwordError && <p className="text-[#FF0000] text-sm">{passwordError}</p>}
                     </div>
                     <div className="max-w-md py-3 mb-3">
-                        {/* <li key='id1' className={`flex items-center pb-1`}>
-                            <input id="idx1" type="checkbox" name="category" checked={check} className="w-4 h-4 accent-darkgrey" onChange={handleCheck}/>
-                            <label htmlFor="idx1" className="ml-3 font-medium capitalize">Keep me logged in - applies to all log in options below. More info</label>
-                        </li> */}
                         <input 
                             id="idx1" 
                             type="checkbox" 

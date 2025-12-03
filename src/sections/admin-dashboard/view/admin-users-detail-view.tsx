@@ -22,26 +22,12 @@ interface User {
   name: string;
   email: string;
   role: UserRole;
-  status: UserStatus; // Dùng kiểu UserStatus
-  joined: string; // ISO date string
-  avatarUrl: string; // Thêm trường avatarUrl
+  status: UserStatus;
+  joined: string; 
+  avatarUrl: string;
   phone: string;
   address: string;
 }
-
-// --- DỮ LIỆU MẪU (Giả lập 1 người dùng) ---
-const mockUser: User = {
-  id: 'cuid2',
-  name: 'Jaxson Korsgaard',
-  email: 'jaxson.k@example.com',
-  role: 'Customer',
-  status: 'Active',
-  joined: '2025-01-07T00:00:00Z',
-  avatarUrl: '/baso.jpg', // Link tới avatar
-  phone: '090-123-4567',
-  address: '123 Example St, District 1, HCMC',
-};
-
 // --- COMPONENT TRANG CHÍNH ---
 export default function UserProfilePage({ id }: Props) {
     const router = useRouter();
@@ -51,7 +37,6 @@ export default function UserProfilePage({ id }: Props) {
   const [address, setAddress] = useState<IAddress | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // STATE MỚI: Cho logic thay đổi avatar
   const [newAvatarFile, setNewAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string>(''); // URL để xem trước
   const fileInputRef = useRef<HTMLInputElement>(null); // Ref để trỏ tới input file
