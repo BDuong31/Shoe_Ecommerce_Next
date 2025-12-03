@@ -1,6 +1,7 @@
 'use client';
 import { getImages } from '@/apis/image';
 import { getProductById } from '@/apis/product';
+import { getVariantById, getVariants } from '@/apis/variant';
 import { getWishlists } from '@/apis/wishlist';
 import { SplashScreen } from '@/components/loading';
 import ProductList, { ProductListLaster } from '@/components/product/productList';
@@ -12,6 +13,7 @@ import { fetcher } from '@/utils/axios';
 import { get } from 'http';
 import React, { useState, useRef, useMemo, useEffect } from "react";
 import { GrFormNext, GrFormPrevious } from 'react-icons/gr';
+import { set } from 'zod';
 type SearchProps = {
     id: string;
 }
@@ -76,7 +78,6 @@ export default function WishlistView() {
     const [loading, setLoading] = React.useState(true);
     
     const fetchWishlist = async () => {
-        setLoading(true);
         try {
             const dto: IWishlistCond = {
                 userId: userProfile?.id || ''
@@ -85,16 +86,14 @@ export default function WishlistView() {
             setWishlist(response.data);
         } catch (error) {
             console.error('Failed to fetch wishlist:', error);
-        } finally {
-            setLoading(false);
-        }
+        } 
     }
 
     const fetchVariantsForProducts = async (productIds: string[]) => {
         try {
             const variantResponses = await Promise.all(
                 productIds.map(productId =>
-                    fetcher.get(`/product/variants/${productId}`)
+                    getVariants(productId)
                 )
             );
             const variantData: Record<string, any> = {};
@@ -108,7 +107,6 @@ export default function WishlistView() {
     }
 
     const fetchProducts = async (productIds: string) => {
-        setLoading(true);
         try {
             const response = await getProductById(productIds);
             setProducts(prevProducts => {
@@ -121,13 +119,10 @@ export default function WishlistView() {
             });
         } catch (error) {
             console.error('Failed to fetch products:', error);
-        } finally {
-            setLoading(false);
-        }
+        } 
     }
 
     const fetchImage = async (productId: string) => {
-        setLoading(true);
         try {
             const dto: IConditionalImage = {
                 refId: productId,
@@ -138,12 +133,11 @@ export default function WishlistView() {
             setImages(prevImages => ({ ...prevImages, [productId]: response.data }));
         } catch (error) {
             console.error('Failed to fetch images:', error);
-        } finally {
-            setLoading(false);
-        }
+        } 
     }
 
     React.useEffect(() => {
+        setLoading(true);
         fetchWishlist();
     }, [userProfile]);
 
@@ -161,6 +155,7 @@ export default function WishlistView() {
         });
         const productIds = products.map(product => product.id);
         fetchVariantsForProducts(productIds);
+        setLoading(false);
     }, [products]);
 
     const filteredResults = useMemo(() => {
@@ -200,7 +195,7 @@ export default function WishlistView() {
         <div className='flex flex-col w-full'>
             <h1 className="text-2xl font-bold mb-4">MY WISHLIST</h1>
             <div className=''>
-                <ProductList products={currentProducts} variants={variantMap} images={images} length={3} />
+                <ProductList products={currentProducts} variants={variantMap} length={3} />
                 {totalPages > 1 && (
                     <div className="flex justify-center items-center space-x-2 mt-12">
                         <button 

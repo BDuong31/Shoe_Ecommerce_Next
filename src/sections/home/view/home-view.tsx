@@ -18,9 +18,11 @@ import { IRating, IRatingWithUser } from "@/interfaces/rating";
 import { getAllRatings } from "@/apis/rating";
 import { IProductVariant } from "@/interfaces/variant";
 import { getVariants } from "@/apis/variant";
+import { set } from "zod";
 export default function HomeView() {
     const { userProfile, loading } = useUserProfile()
     const [products, setProducts] = useState<IProductDetails[]>([]);
+    const [latestProducts, setLatestProducts] = useState<IProductDetails[]>([]);
     const [variants, setVariants] = useState<Record<string, IProductVariant[]>>({});
     const [category, setCategory] = useState<ICategory[]>([]);
     const [reviews, setReviews] = useState<IRatingWithUser[]>([]);
@@ -29,6 +31,7 @@ export default function HomeView() {
     const [totalPages, setTotalPages] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
 
+    // Hàm tính toán số mục hiển thị dựa trên kích thước màn hình
     const calculateItemsPerPage = () => {
         if (typeof window === 'undefined') {
             return 3;
@@ -41,9 +44,12 @@ export default function HomeView() {
         }
     };
 
+
+    // State để lưu số mục hiển thị
     const [itemsPerPage, setItemsPerPage] = useState(calculateItemsPerPage());
 
 
+    // Hàm lấy danh sách sản phẩm
     const fetcherProducts = async () => {
         setIsLoading(true);
         try {
@@ -100,7 +106,10 @@ export default function HomeView() {
     }, []);
 
     const reviewSection = reviews.slice(0, calculateItemsPerPage());
-    const latestProducts = products.slice(0, 4);
+
+    React.useEffect(() => {
+        setLatestProducts(products.slice(0, 4));
+    }, [products]);
 
     useEffect(() => {
         const fetchAllVariants = async () => {
@@ -115,18 +124,19 @@ export default function HomeView() {
         if (latestProducts.length > 0) {
             fetchAllVariants();
         }
+
     }, [latestProducts]);
+    
     const calculateCategoriesPage = useCallback(() => {
         if (!category.length) return;
 
         const newTotalPages = Math.ceil(category.length / itemsPerPage);
         setTotalPages(newTotalPages);
 
-        // Nếu currentPage lớn hơn số trang mới thì điều chỉnh lại
         const safePage = Math.min(currentPage, newTotalPages || 1);
         if (safePage !== currentPage) {
             setCurrentPage(safePage);
-            return; // để tránh double render
+            return; 
         }
 
         const startIdx = (safePage - 1) * itemsPerPage;
@@ -173,7 +183,14 @@ export default function HomeView() {
           <Image src='/slogan.png' width={1320} height={500} className='object-cover w-full h-full ' alt='slogan'/>
         </div>
         <div className="m-auto 3xl:max-w-[1500px] 2xl:max-w-[1450px] xl:max-w-[90%] lg:max-w-[90%] max-w-[95%] max-h-[700px] relative rounded-[64px]">
-            <Image src='/shoes.jpg' width={1320} height={500} className='object-cover rounded-3xl sm:rounded-[40px] md:rounded-[64px] w-full h-full max-h-[500px]' alt='shoes'/>
+            <div className="relative w-full h-[500px]">
+            <Image 
+                src='/shoes.jpg' 
+                fill
+                className='object-cover rounded-3xl sm:rounded-[40px] md:rounded-[64px]' 
+                alt='shoes'
+            />
+            </div>
             <div className='absolute top-0 left-0 w-full h-full rounded-[64px] bg-gradient-to-t from-[#000] to-transparent opacity-80'></div>
             <div className='absolute bottom-12 md:left-12 sm:left-14 left-8 z-10 text-gray'>
                 <h2 className='lg:text-[55px] md:text-[40px] font-semibold uppercase'>NIKE AIR MAX</h2>
@@ -211,7 +228,6 @@ export default function HomeView() {
             </div>
             <div className='m-auto grid gap-9 xl:grid-cols-3 md:grid-cols-2 grid-cols-1 3xl:max-w-[1500px] 2xl:max-w-[1450px] xl:max-w-[90%] lg:max-w-[90%] max-w-[95%]'>
                 {categories?.map((category, index) => (
-                    console.log('Rendering category in grid:', category),
                     category && (
                         <Category key={index} category={category}/> 
                     ) 

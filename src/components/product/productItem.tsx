@@ -10,12 +10,12 @@ import { SplashScreen } from '../loading';
 
 type ProductItemProps = {
     product: IProductDetails;
-    variants?: IProductVariant[] | IProductVariant;
-    images?: IImage[];
+    variants?: IProductVariant[] | undefined;
+    images?: IImage[] | undefined;
 }
 const ProductItem = ( { product, variants, images }: ProductItemProps) => {
     const [isSoldOut, setIsSoldOut] = React.useState(false);
-    const [loading, setLoading] = React.useState(false);
+    const [loading, setLoading] = React.useState(true);
     let imageUrl = '/logo.png';
     for (const img of images || []) {
         if (img.isMain) {
@@ -26,28 +26,37 @@ const ProductItem = ( { product, variants, images }: ProductItemProps) => {
 
     React.useEffect(() => {
         if (variants) {
-            const soldOut = variants.every(v => v.quantity === 0);
+            const variantList = Array.isArray(variants) ? variants : [variants];
+            const soldOut = variantList.every(v => v.quantity === 0);
             setIsSoldOut(soldOut);
         }
     }, [variants]);
 
     React.useEffect(() => {
-        setLoading(false);
+        if (variants !== undefined) {
+            setLoading(false);
+        }
     }, [product.id, variants]);
 
-    if (loading) {
-        return <SplashScreen />;
-    }
 
-    const avgRating = product.averageRating.avgRating || 0;
+    const avgRating = product?.averageRating?.avgRating || 0;
+
     return (
         <Link href={`/product/${product.id}`} className='flex flex-col items-center'>
             <div className='rounded-3xl relative'>
-                <Image src={imageUrl} width={302} height={334} alt={product.productName} className='object-fill rounded-3xl outline outline-[#FFF] outline-[6px] w-[302px] h-[334px]'/>
-            {isSoldOut ? (
-                <h3 className='absolute top-0 left-0 text-white bg-[#FF0000] font-semibold px-4 py-2 rounded-tl-3xl rounded-br-3xl text-xs'>
-                    Sold Out
-                </h3>
+                {loading ? (
+                    <div className='w-[302px] h-[334px] flex items-center justify-center'>
+                        <SplashScreen />
+                    </div>
+                ) : (
+                    <Image src={imageUrl} width={302} height={334} alt={product.productName} className='object-fill rounded-3xl outline outline-[#FFF] outline-[6px] w-[302px] h-[334px]'/>
+                )}
+            { loading ? null : isSoldOut ? (
+                <div className='absolute top-0 left-0 w-[302px] h-[334px] bg-black bg-opacity-50 rounded-3xl flex items-center justify-center'>
+                    <h3 className='text-white bg-[#FF0000] font-semibold px-4 py-2 rounded-tl-3xl rounded-br-3xl text-xs'>
+                        Sold Out
+                    </h3>
+                </div>
             ) : (
                 new Date(product.createdAt).getTime() >= Date.now() - 10 * 24 * 60 * 60 * 1000 && (
                     <h3 className='absolute top-0 left-0 text-white bg-blue font-semibold px-4 py-2 rounded-tl-3xl rounded-br-3xl text-xs'>

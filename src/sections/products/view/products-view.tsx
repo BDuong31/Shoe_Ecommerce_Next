@@ -65,44 +65,34 @@ export default function Product({id} : ParamsProps) {
     const [loading, setLoading] = useState(false);
 
     const fetchProductDetails = async (productId: string) => {
-        setLoading(true);
         try {
             const response = await getProductById(productId);
             setProductInfos(response.data);
             setCategory(response.data.category.name || "");
         } catch (error) {
             console.error('Error fetching product details:', error);
-        } finally {
-            setLoading(false);
-        }
+        } 
     }
 
     const fetcheVariant = async (productId: string): Promise<IProductVariant[]> => {
-        setLoading(true);
         try {
             const response = await getVariants(productId);
             return response.data || [];
         } catch (error) {
             console.error('Error fetching product variants:', error);
             return [];
-        } finally {
-            setLoading(false);
-        }
+        } 
     }
     const fetchRelatedProducts = async () => {
-        setLoading(true);
         try {
             const response = await getProducts()
             setRelatedProducts(response.data);
         } catch (error) {
             console.error('Error fetching related products:', error);
-        } finally {
-            setLoading(false);
-        }
+        } 
     }
 
     const fetcherRating = async (productId: string) => {
-        setLoading(true);
         try {
             const response = await getRatingsByProductId(productId);
             const ratingFilter = (response.data.filter(rating  => rating.rating > 0)).length > 0 ? response.data.filter(rating  => rating.rating > 0) : null;
@@ -110,34 +100,26 @@ export default function Product({id} : ParamsProps) {
             setRatings(ratingFilter);
         } catch (error) {
             console.error('Error fetching ratings:', error);
-        } finally {
-            setLoading(false);
         }
     }
 
     const fetcheUserProfiles = async (ids: string[]) => {
-        setLoading(true);
         try {
             const response = await getListUser(ids);
             setUsers(response.data);
         } catch (error) {
             console.error('Error fetching user profiles:', error);
-        } finally {
-            setLoading(false);
         }
     }
 
     const fetcheCheckedRating = async (productId: string) => {
-        setLoading(true);
         try {
             const response = await checkRatingByUserAndProduct(productId);
             setCheckedRating(response.data);
         } catch (error) {
             console.error('Error fetching checked rating:', error);
             return null;
-        } finally {
-            setLoading(false);
-        }
+        } 
     }
     useEffect(() => {
         const calculateItemsPerPage = () => {
@@ -159,8 +141,13 @@ export default function Product({id} : ParamsProps) {
     }, []);
 
     useEffect(() => {
-        fetchProductDetails(id);
-        fetcheCheckedRating(id);
+        const fetcheData = async () => {
+            setLoading(true);
+            await fetchProductDetails(id);
+            await fetcheCheckedRating(id);
+            setLoading(false);
+        }
+        fetcheData();
     }, [id]);
 
     useEffect(() => {

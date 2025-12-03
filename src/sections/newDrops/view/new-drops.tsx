@@ -96,36 +96,24 @@ export default function NewDropsView() {
     const filterRef = useRef<HTMLDivElement | null>(null);
 
     const fetcherColors = async () => {
-        setLoading(true);
         try {
             const response = await getVariantColors();
             setColors(response.data);    
         } catch (error) {
             console.error('Error fetching colors:', error);
-        } finally {
-            setLoading(false);
         }
     }
 
     const fetcherSizes = async () => {
-        setLoading(true);
         try {
             const response = await getVariantSizes();
             setSizes(response.data);    
         } catch (error) {
             console.error('Error fetching sizes:', error);
-        } finally {
-            setLoading(false);
-        }
+        } 
     }
 
-    useEffect(() => {
-        fetcherColors();
-        fetcherSizes();
-    }, []);
-
     const fetechProducts = async () => {
-        setLoading(true);
         try {
             const response = await getProducts();
             console.log("Fetched products:", response.data);
@@ -133,41 +121,38 @@ export default function NewDropsView() {
             setProductsCount(response.data.length);
         } catch (error) {
             console.error('Error fetching products:', error);
-        } finally { 
-            setLoading(false);
-        }
+        } 
     }
     
     const fetcherVariants = async (productId: string) => {
-        setLoading(true);
         try {
             const response = await getVariants(productId);
             setVariantList(prevVariants => ({ ...prevVariants, [productId]: response.data }));
         } catch (error) {
             console.error('Error fetching product variants:', error);
-        } finally {
-            setLoading(false);
         }
     }
 
     const fetcherCategory = async () => {
-        setLoading(true);
         try {
             const response = await getCategories();
             setCategories(response.data);
         } catch (error) {
             console.error('Error fetching category:', error);
-        } finally {
-            setLoading(false);
         }
     }
-
     useEffect(() => {
-        fetcherCategory();
-    }, []);
-
-    useEffect(() => {
-        fetechProducts();
+        const fetcherAll = async () => {
+            setLoading(true);
+            await Promise.all([
+                fetechProducts(),
+                fetcherColors(),
+                fetcherSizes(),
+                fetcherCategory()
+            ]);
+            setLoading(false);
+        };
+        fetcherAll();
     }, []);
 
     useEffect(() => {

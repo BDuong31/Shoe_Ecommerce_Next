@@ -1,6 +1,6 @@
 "use client"
 import CartItem from '@/components/cart/cartItem';
-import React, { useEffect, useState, useMemo, use } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import { ProductListLaster } from '@/components/product/productList';
 import { GrFormNext, GrFormPrevious } from 'react-icons/gr';
 import { useRouter } from 'next/dist/client/components/navigation';
@@ -21,94 +21,35 @@ import { SplashScreen } from '@/components/loading';
 export default function CartView() {
     const rounter = useRouter();
     const { cart, cartItem, voucherCode, applyVoucher, clearVoucher } = useCart();
-    const {userProfile} = useUserProfile();
     const { showToast } = useToast();
+    
+    // Data States
     const [relatedProducts, setRelatedProducts] = useState<IProductDetails[]>([])
     const [relatedVariants, setRelatedVariants] = useState<Record<string, IProductVariant[]>>({})
     const [variants, setVariants] = useState<IProductVariant[]>([])
     const [products, setProducts] = useState<IProduct[]>([])
     const [variantMap, setVariantMap] = useState<Record<string, IProductVariant>>({})
+    
+    // Voucher & Calculation States
     const [voucherDiscount, setVoucherDiscount] = useState(0);
     const [code, setCode] = useState<string>('');
     const [coupon, setCoupon] = useState<ICoupon[] | null>(null);
     const [userCoupons, setUserCoupons] = useState<IUserCoupon[]>([]);
     const [couponList, setCouponList] = useState<ICoupon[]>([]);
-    const [itemsPerPage, setItemsPerPage] = useState(2);
-    const [totalPages, setTotalPages] = useState(0);
-    const [currentPage, setCurrentPage] = useState(1);
     const [cartTotal, setCartTotal] = useState(0);
     const [totalAfterDiscount, setTotalAfterDiscount] = useState(0);
 
+    // Pagination States
+    const [itemsPerPage, setItemsPerPage] = useState(2);
+    const [totalPages, setTotalPages] = useState(0);
+    const [currentPage, setCurrentPage] = useState(1);
+
+    // Loading State - Chỉ dùng 1 state duy nhất quản lý màn hình chờ
     const [loading, setLoading] = useState(true);
 
-    const fetchVariants = async (variantId: string) => {
-        setLoading(true);
-        try {
-            const response = await getVariantById(variantId);
-            return response.data;
-        } catch (error) {
-            console.error('Error fetching variant by ID:', error);
-            return null;
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    const fetchVariantByProductId = async (productId: string) => {
-        setLoading(true);
-        try {
-            const response = await getVariants(productId);
-            return response.data;
-        } catch (error) {
-            console.error('Error fetching variants by product ID:', error);
-            return [];
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    const fetchRelatedProducts = async () => {
-        setLoading(true);
-        try {
-            const response = await getProducts();
-            const allProducts = response.data;
-            setRelatedProducts(allProducts);
-        } catch (error) {
-            console.error('Error fetching related products:', error);
-        } finally {
-            setLoading(false);
-        }
-    }
+    // --- HELPER FUNCTIONS ---
     
-    const fetchCoupon = async (code: string) => {
-        setLoading(true);
-        try {
-            const response = await getCouponByCondition({ code });
-            console.log('Fetched coupon:', response);
-            setCoupon(response.data);
-        } catch (error) {
-            console.error('Error fetching coupon by code:', error);
-            setCoupon(null);
-        } finally {
-            setLoading(false);
-        }
-    }
-
-    const fetcheCouponById = async (id: string) => {
-        setLoading(true);
-        try {
-            const response = await getCouponById(id);
-            return response.data;
-        } catch (error) {
-            console.error('Error fetching coupon by ID:', error);
-            return null;
-        } finally {
-            setLoading(false);
-        }
-    }
-
     const checkCouponValidity = (coupon: ICoupon) => {
-        console.log('Checking validity for coupon:', coupon);
         const currentDate = new Date();
         if (coupon.expiryDate && new Date(coupon.expiryDate) < currentDate) {
             return false;
@@ -116,31 +57,224 @@ export default function CartView() {
         return true;
     }
 
-    const fetchUserCoupons = async () => {
-        setLoading(true);
-        try {
-            const response = await getUserCoupons();
-            setUserCoupons(response.data);
-        } catch (error) {
-            console.error('Error fetching user coupons:', error);
-            return [];
-        } finally {
-            setLoading(false);
-        }
-    }
+    // --- MAIN DATA LOADING EFFECT (RUNS ONCE) ---
+    useEffect(() => {
+        const initPageData = async () => {
+            setLoading(true);
+            try {
+                // 1. Fetch dữ liệu độc lập song song (Related Products & User Coupons)
+                const [relatedRes, userCouponsRes] = await Promise.all([
+                    getProducts(),
+                    getUserCoupons()
+                ]);
 
+                // Xử lý Related Products
+                const allRelatedProducts = relatedRes.data || [];
+                setRelatedProducts(allRelatedProducts);
+
+                // Xử lý User Coupons
+                const uCoupons = userCouponsRes.data || [];
+                setUserCoupons(uCoupons);
+
+                // 2. Fetch dữ liệu phụ thuộc (Variant của Related Products, Chi tiết Coupon, Variant của Cart)
+                
+                // A. Fetch variants cho related products
+                const relatedVariantPromises = allRelatedProducts.map(p => 
+                    getVariants(p.id).then(res => ({ id: p.id, variants: res.data })).catch(() => null)
+                );
+
+                // B. Fetch chi tiết coupons
+                const couponDetailPromises = uCoupons.map(uc => 
+                    getCouponById(uc.couponId).then(res => res.data).catch(() => null)
+                );
+
+                // C. Fetch variants cho items đang có trong giỏ hàng (Để hiển thị ngay lập tức)
+                const cartVariantPromises = cartItem ? cartItem.map(item => 
+                    getVariantById(item.variantId).then(res => res.data).catch(() => null)
+                ) : [];
+
+                // Chạy tất cả promise phụ thuộc
+                const [relatedVarsResults, couponDetailsResults, cartVarsResults] = await Promise.all([
+                    Promise.all(relatedVariantPromises),
+                    Promise.all(couponDetailPromises),
+                    Promise.all(cartVariantPromises)
+                ]);
+
+                // Update State Related Variants
+                const newRelatedMap: Record<string, IProductVariant[]> = {};
+                relatedVarsResults.forEach(item => {
+                    if (item) newRelatedMap[item.id] = item.variants;
+                });
+                setRelatedVariants(newRelatedMap);
+
+                // Update State Coupon List
+                const validCoupons = couponDetailsResults.filter((c): c is ICoupon => c !== null);
+                setCouponList(validCoupons);
+
+                // Update State Variant Map (Cho Cart)
+                const newVariantMap: Record<string, IProductVariant> = {};
+                cartVarsResults.forEach(v => {
+                    if (v) newVariantMap[v.id] = v;
+                });
+                setVariantMap(prev => ({ ...prev, ...newVariantMap }));
+
+            } catch (error) {
+                console.error("Error initializing cart data:", error);
+                showToast("Failed to load some data", "error");
+            } finally {
+                // Tắt loading sau khi mọi thứ đã xong
+                setLoading(false);
+            }
+        };
+
+        initPageData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // Chỉ chạy 1 lần khi mount
+
+
+    // --- SECONDARY EFFECTS (Logic tính toán & Update nhẹ) ---
+
+    // Effect riêng để handle việc user thêm item vào giỏ khi đang ở trang Cart (nếu có)
+    // Nó sẽ fetch thầm lặng mà không bật lại SplashScreen
+    useEffect(() => {
+        if (!loading && cartItem && cartItem.length > 0) {
+            const missingVariants = cartItem.filter(item => !variantMap[item.variantId]);
+            if (missingVariants.length > 0) {
+                missingVariants.forEach(async (item) => {
+                    try {
+                        const res = await getVariantById(item.variantId);
+                        if (res.data) {
+                            setVariantMap(prev => ({...prev, [item.variantId]: res.data}));
+                        }
+                    } catch (e) { console.error(e) }
+                });
+            }
+        }
+    }, [cartItem, loading, variantMap]);
+
+    // Tính toán Products list từ cart items (đồng bộ)
+    useEffect(() => {
+        if (cartItem && Object.keys(variantMap).length > 0) {
+            const derivedProducts = cartItem
+                .map((item) => variantMap[item.variantId]?.product ?? null)
+                .filter((p): p is IProduct => p !== null);
+            
+            // Loại bỏ trùng lặp nếu cần
+            const uniqueProducts = Array.from(new Map(derivedProducts.map(p => [p.id, p])).values());
+            setProducts(uniqueProducts);
+        }
+    }, [cartItem, variantMap]);
+
+    // Fetch variants của chính các sản phẩm trong giỏ hàng (để hiển thị option đổi size/màu nếu cần)
+    useEffect(() => {
+        if (products.length > 0) {
+            products.forEach((product) => {
+                getVariants(product.id).then((res) => {
+                    setVariants((prev) => {
+                        const newV = [...prev];
+                        res.data.forEach((v: IProductVariant) => { // Type explicitly
+                             if (!newV.find(existing => existing.id === v.id)) newV.push(v);
+                        });
+                        return newV;
+                    });
+                }).catch(console.error);
+            });
+        }
+    }, [products]);
+
+    // Tính tổng tiền
+    useEffect(() => {
+        if (!cartItem || !variantMap) {
+            setCartTotal(0); 
+            return;
+        }
+
+        const total = cartItem.reduce((acc, item) => {
+            const variant = variantMap[item.variantId];
+            if (variant && variant.product) {
+                return acc + (variant.product.price * item.quantity);
+            }
+            return acc;
+        }, 0);
+
+        setCartTotal(total);        
+    }, [cartItem, variantMap]);
+
+    // Xử lý Voucher code từ Context
+    useEffect(() => {
+        if (voucherCode) {
+            setCode(voucherCode);
+            // Fetch coupon info if needed specifically for the input code
+            getCouponByCondition({ code: voucherCode }).then(res => {
+                setCoupon(res.data);
+            }).catch(() => setCoupon(null));
+        } else {
+            setCode('');
+            setCoupon(null);
+        }
+    }, [voucherCode]);
+
+    // Tính toán giảm giá (Discount)
+    useEffect(() => {
+        if (coupon && coupon.length > 0 && checkCouponValidity(coupon[0])) {
+            let discount = 0;
+            if (coupon[0].type === 'percentage') {
+                discount = (cartTotal * coupon[0].discountValue) / 100;
+                // Kiểm tra max discount nếu có (logic thêm)
+                if (coupon[0].maxDiscount && discount > coupon[0].maxDiscount) {
+                    discount = coupon[0].maxDiscount;
+                }
+            } else if (coupon[0].type === 'fixed') {
+                discount = coupon[0].discountValue;
+            }
+            setVoucherDiscount(discount);
+            setTotalAfterDiscount(Math.max(0, cartTotal - discount));
+        } else {
+            setVoucherDiscount(0);
+            setTotalAfterDiscount(cartTotal);
+        }
+    }, [coupon, cartTotal]);
+
+    // Logic phân trang (Resize)
+    useEffect(() => {
+        const calculateItemsPerPage = () => {
+            if (typeof window !== 'undefined') {
+                if (window.innerWidth >= 1280) setItemsPerPage(4);
+                else if (window.innerWidth >= 1024) setItemsPerPage(2);
+                else setItemsPerPage(1);
+            }
+        };
+        calculateItemsPerPage();
+        window.addEventListener('resize', calculateItemsPerPage);
+        return () => window.removeEventListener('resize', calculateItemsPerPage);
+    }, []);
+
+    useEffect(() => {
+        if (relatedProducts.length > 0 && itemsPerPage > 0) {
+            setTotalPages(Math.ceil(relatedProducts.length / itemsPerPage));
+        } else {
+            setTotalPages(0);
+        }
+        if (currentPage > totalPages && totalPages > 0) {
+            setCurrentPage(totalPages);
+        }
+    }, [relatedProducts.length, itemsPerPage, currentPage, totalPages]);
+
+    const paginatedProducts = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return relatedProducts.slice(startIndex, startIndex + itemsPerPage);
+    }, [relatedProducts, currentPage, itemsPerPage]);
+
+    // Handlers
     const handleApplyVoucher = async () => {
-        setLoading(true);
+        // Local loading UI could be added here instead of full screen splash
         if (!code || code.trim() === '') {
             showToast('Please enter a voucher code.', 'error');
-            setLoading(false);
             return;
         } 
-
         try {
             const response = await getCouponByCondition({ code: code.trim() });
             const fetchedCoupons = response.data;
-
             if (fetchedCoupons && fetchedCoupons.length > 0 && checkCouponValidity(fetchedCoupons[0])) {
                 applyVoucher(code.trim());
                 setCoupon(fetchedCoupons);
@@ -151,12 +285,8 @@ export default function CartView() {
                 clearVoucher();
             } 
         } catch (error) {
-            console.error('Error fetching coupon:', error);
+            console.error(error);
             showToast('Failed to apply voucher.', 'error');
-            setCoupon(null);
-            clearVoucher();
-        } finally {
-            setLoading(false);
         }
     }
 
@@ -180,211 +310,10 @@ export default function CartView() {
         setVoucherDiscount(0);
     }
 
-    useEffect(() => {
-        fetchRelatedProducts();
-    }, []);
-
-    useEffect(() => {
-        const loadRelatedVariants = async () => {
-            if (relatedProducts.length === 0) return;
-
-            const newMap: Record<string, IProductVariant[]> = {};
-            await Promise.all(
-                relatedProducts.map(async (product) => {
-                    try {
-                        const variants = await fetchVariantByProductId(product.id);
-                        if (variants) {
-                            newMap[product.id] = variants;
-                        }
-                    } catch (error) {
-                        console.error('Error fetching variants for product:', product.id, error);
-                    }
-                })
-            );
-
-            setRelatedVariants((prevVariants) => ({
-                ...prevVariants,
-                ...newMap,
-            }));
-        };
-
-        loadRelatedVariants();
-    }, [relatedProducts]);
-
-    console.log('Related variants:', relatedVariants);
-
-    useEffect(() => {
-        const fetchAllVariants = async () => {
-            if (cartItem && cartItem.length > 0) {
-                cartItem.forEach(async (item) => {
-                    const variantData = await fetchVariants(item.variantId);
-                    if (variantData) {
-                        setVariantMap((prevMap) => ({
-                            ...prevMap,
-                            [item.variantId]: variantData,
-                        }));
-                    }
-                });
-            }
-        };
-
-        fetchAllVariants();
-        fetchUserCoupons();
-    }, [cartItem]);
-
-    useEffect(() => {
-        const loadCoupons = async () => {
-            const loadedCoupons: ICoupon[] = [];
-            for (const userCoupon of userCoupons) {
-                const coupon = await fetcheCouponById(userCoupon.couponId);
-                if (coupon) {
-                    loadedCoupons.push(coupon);
-                }
-            }
-            setCouponList(loadedCoupons);
-        };
-        loadCoupons();
-    }, [userCoupons])
-
-    useEffect(() => {
-        if (cartItem && Object.keys(variantMap).length > 0) {
-            const products = cartItem
-                .map((item) => {
-                const variant = variantMap[item.variantId];
-                return variant?.product ?? null; 
-                })
-                .filter((p): p is IProduct => p !== null);
-
-            setProducts(products);
-
-            if (products.length === 0) return;
-
-        }
-    }, [cartItem, variantMap]);
-
-    useEffect(() => {
-        if (products.length > 0) {
-            products.forEach((product) => {
-                const response = fetchVariantByProductId(product.id);
-                if (response) {
-                    response.then((variants) => {
-                        setVariants((prevVariant) => {
-                            const newVariant = [...prevVariant];
-                            variants.forEach((variant) => {
-                                if (!newVariant.find(v => v.id === variant.id)) {
-                                    newVariant.push(variant);
-                                }
-                            });
-                            return newVariant;
-                        });
-                    });
-                }
-            });
-        }
-
-    }, [products]);
-
-    useEffect(() => {
-        if (!cartItem || !variantMap || !products || products.length === 0) {
-            setCartTotal(0); 
-            return;
-        }
-
-        const cartTotal = cartItem.reduce((total, item) => {
-            const productVariant = variantMap[item.variantId];
-
-            if (productVariant) {
-                const product = products.find(p => p.id === productVariant.productId);
-                
-                if (product) {
-                    const price = product.price;
-                    total += price * item.quantity;
-                } else {
-                    console.warn(`[Item: ${item.id}] Product NOT FOUND for productId: ${productVariant.productId}`);
-                }
-            } else {
-                console.warn(`[Item: ${item.id}] Variant NOT FOUND for variantId: ${item.variantId}`);
-            }
-            return total;
-        }, 0);
-
-        setCartTotal(cartTotal);        
-    }, [cartItem, variantMap, products]);
-
-
-    useEffect(() => {
-        if (voucherCode) {
-            setCode(voucherCode);
-        } else {
-            setCode('');
-        }
-    }, [voucherCode]);
-
-    useEffect(() => {
-        if (voucherCode) {
-            fetchCoupon(voucherCode);
-        } else {
-            setCoupon(null);
-        }
-    }, [voucherCode]);
-
-    useEffect(() => {
-        if (coupon && coupon.length > 0 && checkCouponValidity(coupon[0])) {
-            console.log('Calculating discount based on:', coupon);
-            let discount = 0;
-            if (coupon[0].type === 'percentage') {
-                discount = (cartTotal * coupon[0].discountValue) / 100;
-            } else if (coupon[0].type === 'fixed') {
-                discount = coupon[0].discountValue;
-            }
-            setVoucherDiscount(discount);
-            setTotalAfterDiscount(cartTotal - discount);
-        } else {
-            setVoucherDiscount(0);
-            setTotalAfterDiscount(cartTotal);
-        }
-    }, [coupon, cartTotal]);
-
-
-    useEffect(() => {
-        const calculateItemsPerPage = () => {
-            if (typeof window !== 'undefined') {
-                if (window.innerWidth >= 1280) {
-                    setItemsPerPage(4);
-                } else if (window.innerWidth >= 1024) {
-                    setItemsPerPage(2);
-                } else {
-                    setItemsPerPage(1);
-                }
-            }
-        };
-
-        calculateItemsPerPage();
-        window.addEventListener('resize', calculateItemsPerPage);
-
-        return () => window.removeEventListener('resize', calculateItemsPerPage);
-    }, []);
-
-    useEffect(() => {
-        if (relatedProducts.length > 0 && itemsPerPage > 0) {
-            setTotalPages(Math.ceil(relatedProducts.length / itemsPerPage));
-        } else {
-            setTotalPages(0);
-        }
-        if (currentPage > totalPages) {
-            setCurrentPage(totalPages > 0 ? totalPages : 1);
-        }
-    }, [relatedProducts.length, itemsPerPage, currentPage, totalPages]);
-
-    const paginatedProducts = useMemo(() => {
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        const endIndex = startIndex + itemsPerPage;
-        return relatedProducts.slice(startIndex, endIndex);
-    }, [relatedProducts, currentPage, itemsPerPage]);
-
     if (loading) {
         return <SplashScreen className='h-[80px]' />
     }
+
     return (
         <>
             <div className='m-auto 3xl:max-w-[1500px] 2xl:max-w-[1450px] xl:max-w-[90%] lg:max-w-[90%] max-w-[95%] lg:grid grid-cols-3 gap-5 py-10'>
@@ -409,8 +338,8 @@ export default function CartView() {
                     <h1 className='text-2xl font-semibold py-5'>Order Summary</h1>
                     <div className='flex flex-col gap-1'>
                         <div className='flex flex-row justify-between'>
-                            <p>{cart?.totalItem} items</p> 
-                            <p>${cartTotal}</p>
+                            <p>{cart?.totalItem || 0} items</p> 
+                            <p>${cartTotal.toFixed(2)}</p>
                     </div>
                     <div className='flex flex-row justify-between'>
                             <p>Delivery</p>
@@ -455,6 +384,8 @@ export default function CartView() {
                     <button className='w-full bg-darkgrey text-fawhite rounded-lg py-2 mt-5 uppercase' onClick={() => rounter.push("/checkout")}>Checkout</button>
                 </div>
             </div>
+            
+            {/* Related Products Section */}
             <div className='m-auto 3xl:max-w-[1500px] 2xl:max-w-[1450px] xl:max-w-[90%] lg:max-w-[90%] max-w-[95%]'>
                 <div>
                     <div className={`pb-5 flex m-auto`}>
@@ -471,7 +402,7 @@ export default function CartView() {
                         </div>
                     </div>
                 </div>
-                <ProductListLaster products={paginatedProducts} variants={relatedVariants} length={4} /> 
+                <ProductListLaster products={paginatedProducts} variants={relatedVariants} length={itemsPerPage} /> 
                 <div className='flex gap-2 py-4 justify-center'>
                     {
                         Array.from({ length: totalPages }).map((_, i) => {
@@ -480,6 +411,8 @@ export default function CartView() {
                     }
                 </div>
             </div>
+
+            {/* Voucher Modal */}
             <dialog id="voucher_modal" className="modal">
                 <div className="modal-box w-11/12 max-w-2xl">
                     <div className="flex gap-3">
@@ -498,7 +431,6 @@ export default function CartView() {
                     <div className="divider">Or</div>
                     <h3 className="font-bold text-lg mb-4">Select Your Voucher</h3>
 
-                    {/* User's voucher list */}
                     <div className="space-y-3 max-h-60 overflow-y-auto">
                     {userCoupons && userCoupons.length > 0 ? (
                         userCoupons.map((c: IUserCoupon, idx: number) => {
@@ -510,8 +442,7 @@ export default function CartView() {
                         const isSelected = isStatus === 'available' ? true : false;
                         const isMinSpend = couponItem && couponItem.minSpend ? (cartTotal >= couponItem.minSpend) : true;   
                         const maxDiscount = couponItem && couponItem.maxDiscount ? couponItem.maxDiscount : null;
-                        console.log('User coupon:', c);
-                        console.log('Coupon list:', couponItem);
+                        
                         return (
                         <div 
                             key={idx}
@@ -557,14 +488,11 @@ export default function CartView() {
                         <button className="btn">Close</button>
                     </form>
                     </div>
-
                 </div>
-
                 <form method="dialog" className="modal-backdrop">
                     <button></button>
                 </form>
             </dialog>
-
         </>
     )
 }

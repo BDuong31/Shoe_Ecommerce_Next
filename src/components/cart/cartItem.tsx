@@ -14,6 +14,7 @@ import { useToast } from '@/context/toast-context';
 import HeartRegular, { HeartBold } from '../icons/heart';
 import { deleteCartItem, updateCartItem } from '@/apis/cart';
 import { useCart } from '@/context/cart-context';
+import { SplashScreen } from '../loading';
 
 type CartItemProps = {
     type: 'cart' | 'checkout';
@@ -229,97 +230,113 @@ const CartItem = ({type , item, variant, variantList} : CartItemProps) => {
     }, [images]);
 
     const currentMaxStock = sizeQtyMap.get(selectedSize!) || 0;
-
     return (
         <div className='grid grid-cols-3 gap-4 bg-none'>
-            <Image src={imageDefault?.url ?? '/logo.png'} width={500} height={500} alt={variant?.id || ''} className='w-full max-h-[200px] object-cover rounded-2xl' />
+            {!imageDefault ? (
+                <div className='w-full max-h-[200px] object-cover rounded-2xl'>
+                <SplashScreen className='h-[200px]' />
+                </div>
+            ) : (
+                <Image src={imageDefault?.url ?? '/logo.png'} width={500} height={500} alt={variant?.id || ''} className='w-full max-h-[200px] object-cover rounded-2xl' />
+            )}
             <div className='col-span-2'>
                 <div className='flex flex-col justify-between h-full'>
-                    <div>
-                        {type === 'cart' ? 
-                            (
-                                <div className='flex justify-between'>
-                                    <h1 className='text-lg font-semibold text-darkgrey max-w-[75%]'>{variant?.product?.productName}</h1>
-                                    <h1 className='text-lg font-semibold text-blue'>${variant?.product?.price}</h1>
-                                </div>
-                            ) : (
-                                <div className='flex justify-between'>
-                                    <h1 className='text-lg font-semibold text-darkgrey max-w-[75%]'>{variant?.product?.productName}</h1>
-                                </div>
-                            )
-                        }
+                    {(type === 'cart' && variant && variantList && currentMaxStock) || (type==='checkout' && variant) ? (
+                        <>
+                            <div>
+                                {type === 'cart' ? 
+                                    (
+                                        <div className='flex justify-between'>
+                                            <h1 className='text-lg font-semibold text-darkgrey max-w-[75%]'>{variant?.product?.productName}</h1>
+                                            <h1 className='text-lg font-semibold text-blue'>${variant?.product?.price}</h1>
+                                        </div>
+                                    ) : (
+                                        <div className='flex justify-between'>
+                                            <h1 className='text-lg font-semibold text-darkgrey max-w-[75%]'>{variant?.product?.productName}</h1>
+                                            <h1 className='text-lg font-semibold text-blue'>${variant?.product?.price}</h1>
+                                        </div>
+                                    )
+                                }
 
-                        <h1 className='text-sm text-darkgrey'>{variant?.product?.description}</h1>
-                        
-                        <div className='flex items-center gap-4 my-3'>
-                            <p className='font-semibold'>Color</p>
-                            <div 
-                                className='w-[30px] h-[30px] rounded-lg' 
-                                style={{ 
-                                    backgroundColor: `${variant?.color}`,
-                                    boxShadow: `rgb(255, 255, 255) 0px 0px 0px 2px, #000000 0px 0px 0px 5px`
-                                }}
-                            ></div>
+                                <h1 className='text-sm text-darkgrey'>{variant?.product?.description}</h1>
+                                
+                                <div className='flex items-center gap-4 my-3'>
+                                    <p className='font-semibold'>Color</p>
+                                    <div 
+                                        className='w-[30px] h-[30px] rounded-lg' 
+                                        style={{ 
+                                            backgroundColor: `${variant?.color}`,
+                                            boxShadow: `rgb(255, 255, 255) 0px 0px 0px 2px, #000000 0px 0px 0px 5px`
+                                        }}
+                                    ></div>
+                                </div>
+
+                                {type === 'cart' ?
+                                    (
+                                        <div className={`flex gap-5 self-end my-5 ${isUpdating ? 'opacity-50 pointer-events-none' : ''}`}>
+                                            <div className='flex items-center gap-2'>
+                                                <p>Size</p>
+                                                <SelectMenu 
+                                                    options={sizes} 
+                                                    value={selectedSize!} 
+                                                    onChange={onSizeChange}
+                                                    disabled={isUpdating}
+                                                />
+                                            </div>
+                                            <div className='flex items-center gap-2'>
+                                                <p>Quantity</p>
+                                                <QtyMenu 
+                                                    maxStock={currentMaxStock} 
+                                                    value={selectedQty} 
+                                                    onChange={onQtyChange}
+                                                    disabled={isUpdating || qtyOptions.length === 0}
+                                                />
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className='flex items-center gap-5 my-5'>
+                                                <p>Size: {variant?.size}</p>
+                                                <p>Quantity: {item?.quantity}</p>
+                                            </div>
+                                        </>
+                                    )
+                                }
+                            </div>
+                            
+                            <div className='flex flex-row justify-between'>
+                                {type === 'cart' ? 
+                                    (
+                                        <div className='flex flex-row gap-4 mb-1'>
+                                            <button 
+                                                className='hover:bg-darkgrey/20 rounded-3xl h-full p-2'
+                                                onClick={fetcherDeleteCartItem}
+                                            >
+                                                <IoTrashBinOutline size={25} color='#232321' role='button' />
+                                            </button>
+                                            <button 
+                                                className='hover:bg-darkgrey/20 rounded-3xl h-full p-2'
+                                                onClick={handleFavoriteToggle}
+                                            >
+                                            { isFavorite ? (
+                                                    <HeartBold width={24} height={24} className='fill-darkgrey' />
+                                            ) : (
+                                                    <HeartRegular width={24} height={24} className='stroke-darkgrey' />
+                                            )}
+                                            </button>
+                                            
+                                        </div>
+                                    ) : (
+                                        null
+                                    )
+                                }
+                            </div>
+                        </>
+                    ) : (
+                        <div className='flex justify-center items-center h-full'>
+                            <SplashScreen className='h-[200px]' />
                         </div>
-
-                        {type === 'cart' ?
-                            (
-                                <div className={`flex gap-5 self-end my-5 ${isUpdating ? 'opacity-50 pointer-events-none' : ''}`}>
-                                    <div className='flex items-center gap-2'>
-                                        <p>Size</p>
-                                        <SelectMenu 
-                                            options={sizes} 
-                                            value={selectedSize!} 
-                                            onChange={onSizeChange}
-                                            disabled={isUpdating}
-                                        />
-                                    </div>
-                                    <div className='flex items-center gap-2'>
-                                        <p>Quantity</p>
-                                        <QtyMenu 
-                                            maxStock={currentMaxStock} 
-                                            value={selectedQty} 
-                                            onChange={onQtyChange}
-                                            disabled={isUpdating || qtyOptions.length === 0}
-                                        />
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className='flex items-center gap-5 my-5'>
-                                    <p>Size: {variant?.size}</p>
-                                    <p>Quantity: {item?.quantity}</p>
-                                </div>
-                            )
-                        }
-                    </div>
-                    
-                    <div className='flex flex-row justify-between'>
-                        {type === 'cart' ? 
-                            (
-                                <div className='flex flex-row gap-4 mb-1'>
-                                    <button 
-                                        className='hover:bg-darkgrey/20 rounded-3xl h-full p-2'
-                                        onClick={fetcherDeleteCartItem}
-                                    >
-                                        <IoTrashBinOutline size={25} color='#232321' role='button' />
-                                    </button>
-                                    <button 
-                                        className='hover:bg-darkgrey/20 rounded-3xl h-full p-2'
-                                        onClick={handleFavoriteToggle}
-                                    >
-                                       { isFavorite ? (
-                                            <HeartBold width={24} height={24} className='fill-darkgrey' />
-                                       ) : (
-                                            <HeartRegular width={24} height={24} className='stroke-darkgrey' />
-                                       )}
-                                    </button>
-                                    
-                                </div>
-                            ) : (
-                                <h1 className='text-lg font-semibold text-blue'>${variant?.product?.price}</h1>
-                            )
-                        }
-                    </div>
+                    )}
                 </div>
             </div>
         </div>

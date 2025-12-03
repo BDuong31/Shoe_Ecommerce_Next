@@ -115,10 +115,6 @@ export default function SearchPopup() {
         }
     };
 
-    if (loading) {
-        return <SplashScreen className="h-[80vh]" />;
-    }
-
     return (
         <div>
             <button

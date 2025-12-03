@@ -5,8 +5,8 @@ import { z } from 'zod';
 import { EmailTemplate } from '@/components/email/email-template';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const fromEmail = 'onboarding@resend.dev'; // Dùng email này để test
-const toEmail = process.env.YOUR_EMAIL_ADDRESS;
+const fromEmail = process.env.YOUR_EMAIL_ADDRESS;
+const toEmail = process.env.TO_EMAIL_ADDRESS;
 
 const contactFormSchema = z.object({
   email: z.string().email({ message: "Email không hợp lệ" }),

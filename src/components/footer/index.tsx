@@ -104,7 +104,7 @@ const Footer = () => {
                 </div>
               </div>
           </div>
-              <Image src="/footerbassso.png" alt="baso logo" width={833} height={112} className='pt-10 justify-self-center'/>
+              <Image src="/footerbassso.png" alt="baso logo" width={833} height={112} className='pt-10 justify-self-center max-w-full h-auto'/>
         </div>
         <h1 className='py-5 text-center flex items-center justify-center'>© All rights reserved | Made with baso</h1>
     </div>

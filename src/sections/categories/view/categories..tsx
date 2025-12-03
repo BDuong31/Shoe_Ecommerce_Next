@@ -100,36 +100,24 @@ export default function Categories({ slug }: Slug) {
     const filterRef = useRef<HTMLDivElement | null>(null);
 
     const fetcherColors = async () => {
-        setLoading(true);
         try {
             const response = await getVariantColors();
             setColors(response.data);    
         } catch (error) {
             console.error('Error fetching colors:', error);
-        } finally {
-            setLoading(false);
-        }
+        } 
     }
 
     const fetcherSizes = async () => {
-        setLoading(true);
         try {
             const response = await getVariantSizes();
             setSizes(response.data);    
         } catch (error) {
             console.error('Error fetching sizes:', error);
-        } finally {
-            setLoading(false);
-        }
+        } 
     }
 
-    useEffect(() => {
-        fetcherColors();
-        fetcherSizes();
-    }, []);
-
     const fetechProducts = async (id: string) => {
-        setLoading(true);
         try {
             const dto: IConditionalProduct = {
                 categoryId: slug,
@@ -139,25 +127,29 @@ export default function Categories({ slug }: Slug) {
             setProductList(response.data);
         } catch (error) {
             console.error("Error fetching product:", error);
-        } finally {
-            setLoading(false);
         }
     };
 
     const fetcherVariants = async (productId: string) => {
-        setLoading(true);
         try {
             const response = await getVariants(productId);
             setVariantList(prevVariants => ({ ...prevVariants, [productId]: response.data }));
         } catch (error) {
             console.error('Error fetching product variants:', error);
-        } finally {
-            setLoading(false);
-        }
+        } 
     }
 
     useEffect(() => {
-        fetechProducts(slug);
+        const fetchData = async () => {
+            setLoading(true);
+            await Promise.all([
+                fetcherColors(),
+                fetcherSizes(),
+                fetechProducts(slug),
+            ]);
+            setLoading(false);
+        };
+        fetchData();
     }, []);
     
     useEffect(() => {

@@ -16,6 +16,7 @@ import { createCartItem } from '@/apis/cart';
 import { ICartItemCreate } from '@/interfaces/cart';
 import { useCart } from '@/context/cart-context';
 import { useAuth } from '@/context/auth-context';
+import { SplashScreen } from '../loading';
 
 type ProductDetailProps = {
     product: IProductDetails | null;
@@ -30,6 +31,7 @@ const ProductDetails = ( {product}: ProductDetailProps) => {
     const [variant, setVariant] = useState<IProductVariant[]>([])
     const [isInWishlist, setIsInWishlist] = useState(false);
     const { showToast } = useToast();
+    const [loading, setLoading] = useState(true);
     const [selectedColor, setSelectedColor] = useState<string | undefined>(
         undefined
     );
@@ -75,8 +77,15 @@ const ProductDetails = ( {product}: ProductDetailProps) => {
     }
 
     useEffect(() => {
-        fetcherVariant();
-        fetchWishlistStatus();
+        const fetchData = async () => {
+            setLoading(true);
+            await fetcherVariant();
+            if (isAuthenticated && userProfile) {
+                await fetchWishlistStatus();
+            }
+            setLoading(false);
+        }
+        fetchData();
     }, [product])
 
     useEffect(() => {
@@ -198,11 +207,19 @@ const ProductDetails = ( {product}: ProductDetailProps) => {
             }
         }
     }
-  return (
-    <div>
-        <h1 className='text-3xl font-semibold'>{product?.brand?.name} {product?.productName}</h1>
-        <h2 className='text-xl text-blue font-semibold pt-2'>${product?.price}</h2>
-        <div className='mt-3'>
+
+    if (loading || !product) {
+        return (
+            <div className='w-full h-[400px] flex items-center justify-center'> 
+                <SplashScreen />
+            </div>
+        );
+    }
+    return (
+        <div>
+            <h1 className='text-3xl font-semibold'>{product?.brand?.name} {product?.productName}</h1>
+            <h2 className='text-xl text-blue font-semibold pt-2'>${product?.price}</h2>
+            <div className='mt-3'>
             <h2 className='text-lg font-semibold'>COLOR</h2>
             <ColorPickerSelected colors={allColors} selectedColor={selectedColor} setSelectedColor={setSelectedColor} isColorAvailable={isColorAvailable}/>
         <div className='mt-3'>
